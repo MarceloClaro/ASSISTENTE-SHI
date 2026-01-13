@@ -5,6 +5,7 @@ Reference: https://modelcontextprotocol.io/specification/2024-11-05
 
 import asyncio
 import json
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -222,6 +223,9 @@ class McpServer:
         self.tools: List[McpTool] = []
         self._send_callback: Optional[Callable] = None
         self._camera = None
+        # Rastrear últimos tools completos para ignorar cancelamentos prematuros
+        self._last_successful_tool_id: Optional[int] = None
+        self._last_successful_tool_time: Optional[float] = None
 
     def set_send_callback(self, callback: Callable):
         """
@@ -387,6 +391,44 @@ class McpServer:
 
             # Notificando
             if method.startswith("notifications"):
+                # Ignorar cancelamentos prematuros que chegam logo após
+                # um tool bem-sucedido (para permitir TTS completar)
+                if method == "notifications/cancelled":
+                    request_id = data.get("id")
+                    current_time = time.time()
+                    
+                    # Normalizar ID para comparação (pode ser string ou int)
+                    normalized_request_id = str(request_id) if request_id else None
+                    normalized_last_id = str(
+                        self._last_successful_tool_id
+                    ) if self._last_successful_tool_id else None
+                    
+                    logger.info(
+                        f"[MCP] Cancelamento recebido: "
+                        f"ID={request_id} (norm={normalized_request_id}), "
+                        f"Último sucesso: {normalized_last_id}"
+                    )
+                    
+                    # Se este cancelamento é para o último tool
+                    # bem-sucedido e chegou em menos de 5 segundos,
+                    # ignorar para permitir TTS completar
+                    if (
+                        normalized_request_id == normalized_last_id
+                        and self._last_successful_tool_time
+                        and (
+                            current_time - self._last_successful_tool_time
+                        ) < 5.0
+                    ):
+                        elapsed = (
+                            current_time - self._last_successful_tool_time
+                        )
+                        logger.info(
+                            f"[MCP] Ignorando cancelamento prematuro "
+                            f"para tool ID={request_id} "
+                            f"({elapsed:.1f}s após sucesso, permitindo TTS)"
+                        )
+                        return
+                
                 logger.info(f"[MCP] NotificandoMensagem: {method}")
                 return
 
@@ -521,9 +563,16 @@ class McpServer:
         try:
             result = await tool.call(arguments)
             logger.info(f"[MCP]  {tool_name} Sucesso，: {result}")
+            
+            # Registrar sucesso para ignorar cancelamentos prematuros
+            self._last_successful_tool_id = id
+            self._last_successful_tool_time = time.time()
+            
             await self._reply_result(id, json.loads(result))
         except Exception as e:
-            logger.error(f"[MCP]  {tool_name} Falha: {e}", exc_info=True)
+            logger.error(
+                f"[MCP]  {tool_name} Falha: {e}", exc_info=True
+            )
             await self._reply_error(id, str(e))
 
     async def _parse_capabilities(self, capabilities):

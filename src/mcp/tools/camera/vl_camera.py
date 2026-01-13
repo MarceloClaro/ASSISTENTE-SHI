@@ -29,19 +29,46 @@ class VLCamera(BaseCamera):
         super().__init__()
         config = ConfigManager.get_instance()
 
-        # InicializandoOpenAI
-        api_key = config.get_config("CAMERA_OPTIONS.VL_API_KEY", "")
-        base_url = config.get_config(
-            "CAMERA_OPTIONS.LOCAL_VL_URL",
-            "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        # Tentar obter config do CAMERA_OPTIONS (preferido)
+        # ou CAMERA (fallback)
+        api_key = config.get_config(
+            "CAMERA_OPTIONS.VL_API_KEY",
+            config.get_config("CAMERA.VLapi_key", "")
         )
         
+        base_url = config.get_config(
+            "CAMERA_OPTIONS.LOCAL_VL_URL",
+            config.get_config(
+                "CAMERA.Local_VL_url",
+                "https://api.tenclass.net/xiaozhi/vision/explain"
+            )
+        )
+        
+        # Se é a URL antiga (xiaozhi.me), corrigir para tenclass
+        if base_url and "xiaozhi.me" in base_url:
+            base_url = base_url.replace(
+                "api.xiaozhi.me",
+                "api.tenclass.net/xiaozhi"
+            )
+        
+        # Guardar base_url para decisões posteriores
+        self.base_url = base_url
+
         self.client = OpenAI(
             api_key=api_key if api_key else "sk-default-key",
             base_url=base_url,
         )
-        self.model = config.get_config("CAMERA_OPTIONS.MODELS", "glm-4v-plus")
-        logger.info(f"VL Camera initialized with model: {self.model}, URL: {base_url}")
+        
+        model_val = config.get_config(
+            "CAMERA_OPTIONS.MODELS",
+            config.get_config("CAMERA.models", "glm-4v-plus")
+        )
+        self.model = model_val if model_val else "glm-4v-plus"
+        
+        logger.info(
+            f"VL Camera initialized with model: {self.model}, URL: "
+            f"{base_url}"
+        )
 
     @classmethod
     def get_instance(cls):
@@ -64,7 +91,9 @@ class VLCamera(BaseCamera):
             # TentativaAbrindo
             cap = cv2.VideoCapture(self.camera_index)
             if not cap.isOpened():
-                logger.error(f"Cannot open camera at index {self.camera_index}")
+                logger.error(
+                    f"Cannot open camera at index {self.camera_index}"
+                )
                 return False
 
             # ConfigurandoParâmetro
@@ -91,7 +120,9 @@ class VLCamera(BaseCamera):
                 new_width = int(width * scale)
                 new_height = int(height * scale)
                 frame = cv2.resize(
-                    frame, (new_width, new_height), interpolation=cv2.INTER_AREA
+                    frame,
+                    (new_width, new_height),
+                    interpolation=cv2.INTER_AREA,
                 )
 
             # CodificaçãoparaJPEGBytes
@@ -104,7 +135,8 @@ class VLCamera(BaseCamera):
             # BytesDados
             self.set_jpeg_data(jpeg_data.tobytes())
             logger.info(
-                f"Image captured successfully (size: {self.jpeg_data['len']} bytes)"
+                "Image captured successfully (size: %d bytes)",
+                self.jpeg_data["len"],
             )
             return True
 
@@ -114,7 +146,7 @@ class VLCamera(BaseCamera):
 
     def analyze(self, question: str, context: str = "") -> str:
         """
-        Analisar imagem usando AI com fallback para Gemini.
+        Analisar imagem usando AI com fallback para Cliente AI Xiaozhi.
         """
         try:
             if not self.jpeg_data["buf"]:
@@ -132,19 +164,45 @@ class VLCamera(BaseCamera):
                 full_prompt = f"{full_prompt}\n\nContexto: {context}"
                 logger.info(f"Sending image with context: {context[:50]}")
 
-            # Tentar com Zhipu/OpenAI primeiro
-            logger.info("Tentando análise de imagem com Zhipu...")
-            try:
-                return self._analyze_with_openai(img_b64, full_prompt)
-            except Exception as zhipu_error:
-                logger.warning(
-                    f"Zhipu falhou: {str(zhipu_error)}, "
-                    "tentando Gemini..."
+            # Tentar Ollama local se base_url aponta para localhost:11434
+            # ou se o modelo for da família llava
+            base_url_str = str(getattr(self, "base_url", ""))
+            if (
+                "localhost:11434" in base_url_str
+                or "127.0.0.1:11434" in base_url_str
+            ):
+                logger.info("Tentando Ollama local...")
+                try:
+                    return self._analyze_with_ollama(img_b64, full_prompt)
+                except Exception as ollama_error:
+                    logger.warning(
+                        f"Ollama falhou: {str(ollama_error)}, "
+                        "tentando Cliente AI Xiaozhi..."
+                    )
+            # Se for Gemini, usar direto
+            elif "gemini" in self.model.lower():
+                logger.info("Usando Gemini Vision API...")
+                return self._analyze_with_gemini(img_b64, full_prompt)
+            elif "deepseek" in self.model.lower():
+                # DeepSeek não suporta visão, pular para Xiaozhi
+                logger.info(
+                    "DeepSeek detectado (sem visão), "
+                    "tentando Cliente AI Xiaozhi..."
                 )
+            else:
+                # Tentar com Zhipu/OpenAI
+                logger.info("Tentando análise com API OpenAI-compatible...")
+                try:
+                    return self._analyze_with_openai(img_b64, full_prompt)
+                except Exception as api_error:
+                    logger.warning(
+                        f"API falhou: {str(api_error)}, "
+                        "tentando Cliente AI Xiaozhi..."
+                    )
 
-            # Fallback para Gemini Vision API
-            logger.info("Usando fallback: Gemini Vision API...")
-            return self._analyze_with_gemini(img_b64, full_prompt)
+            # Fallback para Cliente AI Xiaozhi (Zhipu)
+            logger.info("Usando fallback: Cliente AI Xiaozhi...")
+            return self._analyze_with_openai(img_b64, full_prompt)
 
         except Exception as e:
             error_msg = f"Failed to analyze image: {str(e)}"
@@ -155,25 +213,49 @@ class VLCamera(BaseCamera):
     def _analyze_with_openai(self, image_b64: str,
                              prompt: str) -> str:
         """Analisar imagem usando OpenAI-compatible API."""
-        messages = [
-            {"role": "system",
-             "content": "You are a helpful assistant."},
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{image_b64}"
+        
+        # DeepSeek usa formato diferente para visão
+        if "deepseek" in self.model.lower() or \
+           "api.deepseek.com" in str(getattr(self.client, '_base_url', '')):
+            # Formato DeepSeek: usar content como array de objetos
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_b64}"
+                            }
                         },
-                    },
-                    {
-                        "type": "text",
-                        "text": prompt,
-                    },
-                ],
-            },
-        ]
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        else:
+            # Formato padrão OpenAI/Zhipu
+            messages = [
+                {"role": "system",
+                 "content": "You are a helpful assistant."},
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_b64}"
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt,
+                        },
+                    ],
+                },
+            ]
 
         completion = self.client.chat.completions.create(
             model=self.model,
@@ -191,133 +273,224 @@ class VLCamera(BaseCamera):
         logger.info("Análise Zhipu concluída com sucesso")
         return f'{{"success": true, "text": "{result}"}}'
 
-    def _analyze_with_gemini(self, image_b64: str,
-                             prompt: str) -> str:
-        """Analisar imagem usando Ollama localmente (minicpm-v)."""
+    def _analyze_with_ollama(self, image_b64: str, prompt: str) -> str:
+        """Analisar imagem usando Ollama local (llava)."""
         try:
-            import requests
-            from requests.exceptions import Timeout, ConnectionError
-
-            ollama_url = "http://localhost:11434/api/generate"
-            logger.info("Analisando com Ollama (minicpm-v) fallback...")
+            import httpx
             
-            full_prompt = (
-                f"{prompt}\n\nDescreva a imagem de forma concisa."
+            logger.info("Analisando com Ollama local (llava)...")
+            
+            # Ollama API endpoint
+            url = "http://localhost:11434/api/generate"
+            
+            # Melhorar o prompt para português e ser mais direto
+            # Remover possíveis aspas extras que causam problemas
+            clean_prompt = prompt.strip().strip('"').strip("'")
+            
+            # Palavras que causam recusa do llava por privacidade
+            palavras_proibidas = [
+                "identificação", "identificar", "identifique",
+                "quem é", "quem e", "nome da pessoa", "pessoa é",
+                "reconhecer", "reconhecimento facial",
+                "identidade", "identificação facial"
+            ]
+            
+            # Verificar se prompt contém palavras proibidas
+            prompt_lower = clean_prompt.lower()
+            tem_palavra_proibida = any(
+                palavra in prompt_lower for palavra in palavras_proibidas
             )
             
+            # Se tiver palavra proibida ou prompt vazio, usar seguro
+            if tem_palavra_proibida or len(clean_prompt) < 5:
+                # Prompt EXTREMAMENTE CONCISO - máximo 60-80 caracteres
+                clean_prompt = (
+                    "Frase curta (máx 10 palavras): "
+                    "cena, objetos principais. Nada mais."
+                )
+            else:
+                # Adicionar aviso de ser MUITO conciso
+                clean_prompt = (
+                    f"{clean_prompt}. "
+                    "Resposta em 1 frase, máx 10 palavras."
+                )
+            
+            logger.info(f"Prompt para Ollama: {clean_prompt[:80]}...")
+            
+            # Determinar modelo (priorizar modelos rápidos)
+            model = self.model.lower()
+            if "llava" in model:
+                # Tentar usar modelo de visão mais rápido se disponível
+                try:
+                    import subprocess
+                    result = subprocess.run(
+                        ["ollama", "list"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    models_available = result.stdout.lower()
+                    
+                    # Prioridade: minicpm-v > llava:7b > llava
+                    if "minicpm-v" in models_available:
+                        model = "minicpm-v"
+                        logger.info("Usando modelo rápido: minicpm-v")
+                    elif "llava:7b" in models_available:
+                        model = "llava:7b"
+                        logger.info("Usando modelo rápido: llava:7b")
+                    else:
+                        model = "llava"
+                        logger.info(
+                            "Usando llava padrão (pode demorar 2-3 min)"
+                        )
+                except Exception as e:
+                    logger.debug(f"Erro detectando modelos: {e}")
+                    model = "llava"
+            
+            # Preparar payload para Ollama
             payload = {
-                "model": "minicpm-v",
-                "prompt": full_prompt,
+                "model": model,
+                "prompt": clean_prompt,
                 "images": [image_b64],
                 "stream": False,
-                "temperature": 0.7
+                "options": {
+                    # Tokens reduzidos para respostas EXTREMAMENTE concisas
+                    # 70 tokens ≈ 210 caracteres máximo
+                    "num_predict": 70,
+                    "temperature": 0.3  # Muito baixo para resposta curta
+                }
             }
             
-            max_retries = 2
-            for attempt in range(max_retries):
-                try:
-                    msg = f"Tentativa {attempt + 1}/{max_retries}"
-                    logger.info(msg)
-                    
-                    response = requests.post(
-                        ollama_url,
-                        json=payload,
-                        timeout=15
-                    )
-                    
-                    if response.status_code == 200:
-                        resp_json = response.json()
-                        description = resp_json.get(
-                            "response", ""
-                        ).strip()
-                        
-                        if description:
-                            description = " ".join(
-                                description.split()
-                            )
-                            logger.info(
-                                "Análise Ollama concluída - "
-                                f"Descrição: {description[:60]}..."
-                            )
-                            result_text = (
-                                '{{"success": true, "text": '
-                                '"{0}"}}'.format(description)
-                            )
-                            return result_text
-                        else:
-                            error_msg = (
-                                "Ollama retornou resposta vazia"
-                            )
-                            logger.warning(error_msg)
-                            if attempt < max_retries - 1:
-                                continue
-                            result_text = (
-                                '{{"success": false, '
-                                '"message": "{0}"}}'.format(
-                                    error_msg
-                                )
-                            )
-                            return result_text
-                    else:
-                        error_msg = (
-                            f"Status HTTP {response.status_code}"
-                        )
-                        logger.warning(f"Ollama: {error_msg}")
-                        if attempt < max_retries - 1:
-                            continue
-                        result_text = (
-                            '{{"success": false, '
-                            '"message": "Ollama: {0}"}}'.format(
-                                error_msg
-                            )
-                        )
-                        return result_text
-                
-                except Timeout:
-                    msg_log = (
-                        f"Timeout tentativa {attempt + 1}"
-                    )
-                    logger.warning(msg_log)
-                    if attempt < max_retries - 1:
-                        logger.info("Retentando...")
-                        continue
-                    error_msg = (
-                        "Ollama timeout - modelo carregando. "
-                        "Aguarde e tente novamente."
-                    )
-                    logger.error(error_msg)
-                    result_text = (
-                        '{{"success": false, '
-                        '"message": "{0}"}}'.format(error_msg)
-                    )
-                    return result_text
-                
-                except ConnectionError:
-                    msg_log = (
-                        f"Falha conexão tentativa {attempt + 1}"
-                    )
-                    logger.warning(msg_log)
-                    if attempt < max_retries - 1:
-                        logger.info("Retentando...")
-                        continue
-                    error_msg = (
-                        "Ollama não está em localhost:11434. "
-                        "Execute: ollama serve"
-                    )
-                    logger.error(error_msg)
-                    result_text = (
-                        '{{"success": false, '
-                        '"message": "{0}"}}'.format(error_msg)
-                    )
-                    return result_text
-
-        except Exception as e:
-            error_msg = f"Erro Ollama: {str(e)}"
-            logger.error(error_msg)
-            result_text = (
-                '{{"success": false, "message": "{0}"}}'.format(
-                    error_msg
-                )
+            # Fazer requisição
+            response = httpx.post(
+                url,
+                json=payload,
+                timeout=300.0
             )
-            return result_text
+            
+            if response.status_code == 200:
+                result = response.json()
+                text = result.get("response", "")
+                
+                if text and len(text) > 10:
+                    logger.info(
+                        f"Análise Ollama concluída: {len(text)} caracteres"
+                    )
+                    # Escapar aspas duplas e quebras de linha no texto
+                    clean_text = text.replace('"', '\\"').replace('\n', ' ')
+                    msg = f'{{"success": true, "text": "{clean_text}"}}'
+                    return msg
+                
+                error_msg = "Ollama retornou resposta vazia ou muito curta"
+                logger.error(f"{error_msg}: '{text}'")
+                msg = f'{{"success": false, "message": "{error_msg}"}}'
+                return msg
+            else:
+                error_msg = (
+                    f"Ollama HTTP {response.status_code}: "
+                    f"{response.text}"
+                )
+                logger.error(error_msg)
+                msg = f'{{"success": false, "message": "{error_msg}"}}'
+                return msg
+        
+        except Exception as e:
+            error_msg = f"Ollama failed: {str(e)}"
+            logger.error(error_msg)
+            msg = f'{{"success": false, "message": "{error_msg}"}}'
+            return msg
+
+    def _analyze_with_gemini(self, image_b64: str,
+                             prompt: str) -> str:
+        """Analisar imagem usando Google Gemini Vision API."""
+        try:
+            import os
+            import httpx
+            
+            # Obter chave Gemini
+            gemini_key = os.getenv("GEMINI_API_KEY", "")
+            if not gemini_key:
+                config = ConfigManager.get_instance()
+                gemini_key = config.get_config(
+                    "CAMERA_OPTIONS.GEMINI_API_KEY", ""
+                )
+            
+            if not gemini_key:
+                error_msg = "GEMINI_API_KEY não configurada"
+                logger.error(error_msg)
+                msg = f'{{"success": false, "message": "{error_msg}"}}'
+                return msg
+            
+            logger.info("Analisando com Gemini Vision API...")
+            
+            # URL do Gemini
+            url = (
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                "gemini-2.0-flash-exp:generateContent"
+            )
+            
+            # Preparar payload para Gemini
+            gemini_payload = {
+                "contents": [
+                    {
+                        "parts": [
+                            {
+                                "inlineData": {
+                                    "mimeType": "image/jpeg",
+                                    "data": image_b64
+                                }
+                            },
+                            {"text": prompt}
+                        ]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 2048
+                }
+            }
+            
+            # Fazer requisição
+            headers = {"Content-Type": "application/json"}
+            response = httpx.post(
+                f"{url}?key={gemini_key}",
+                json=gemini_payload,
+                headers=headers,
+                timeout=30.0
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                candidates = result.get("candidates", [])
+                if candidates:
+                    parts = (
+                        candidates[0].get("content", {})
+                        .get("parts", [])
+                    )
+                    if parts:
+                        text = parts[0].get("text", "")
+                        logger.info(
+                            "Análise Gemini concluída com sucesso"
+                        )
+                        msg = f'{{"success": true, "text": "{text}"}}'
+                        return msg
+                
+                error_msg = "Gemini retornou resposta vazia"
+                logger.error(error_msg)
+                msg = f'{{"success": false, "message": "{error_msg}"}}'
+                return msg
+            else:
+                error_msg = (
+                    f"Gemini HTTP {response.status_code}: "
+                    f"{response.text}"
+                )
+                logger.error(error_msg)
+                msg = f'{{"success": false, "message": "{error_msg}"}}'
+                return msg
+        
+        except Exception as e:
+            error_msg = f"Gemini analysis failed: {str(e)}"
+            logger.error(error_msg)
+            msg = f'{{"success": false, "message": "{error_msg}"}}'
+            return msg
 

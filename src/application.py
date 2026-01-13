@@ -123,7 +123,7 @@ class Application:
 
             # Garantir que MCP foi inicializado
             try:
-                mcp_plugin = self.plugins.get_plugin("mcp")
+                mcp_plugin = self.plugins.get("mcp")
                 if mcp_plugin and hasattr(mcp_plugin, "_server"):
                     tools_count = len(mcp_plugin._server.tools)
                     msg = f"[APP] MCP iniciado com {tools_count}"
