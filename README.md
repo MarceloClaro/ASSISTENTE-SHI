@@ -479,6 +479,202 @@ wscat -c "wss://api.xiaozhi.me/mcp/?token=..."
 
 ## ⭐ Vantagens de Usar Xiaozhi.me
 
+### 🆓 Partes GRATUITAS do Serviço Xiaozhi.me
+
+O ASSISTENTE-SHI utiliza o serviço **xiaozhi.me de forma gratuita** nas seguintes áreas:
+
+#### **1. Acesso ao Endpoint MCP (Gratuito)**
+```
+✅ Conexão WebSocket: wss://api.xiaozhi.me/mcp/
+✅ Autenticação JWT: Fornecida gratuitamente
+✅ Infraestrutura: Servidores xiaozhi.me
+✅ Banda: Sem cobranças adicionais
+✅ Suporte Técnico: Documentação e exemplos livres
+```
+
+#### **2. Ferramentas MCP Básicas (Gratuitas - Até Certo Uso)**
+
+**Ferramentas Sempre Gratuitas:**
+- ✅ **Sistema** (4) - Controle de volume, aplicativos
+- ✅ **Calendário** (7) - Criar, editar, listar eventos
+- ✅ **Timer** (3) - Temporizadores básicos
+- ✅ **Música** (7) - Controles de reprodução local
+- ✅ **Câmera** (2) - Captura de screenshots
+
+**Ferramentas com Limite Gratuito (Free Tier):**
+- ⚠️ **Análise de Imagens** - 10 análises/dia grátis
+- ⚠️ **Consulta de Informações** - 50 requisições/dia
+- ⚠️ **Busca Web** - 20 buscas/dia
+- ⚠️ **Ba Zi (Astrologia)** - 5 análises/dia
+
+#### **3. Reconexão e Failover Automático (Gratuito)**
+
+```
+✅ Reconexão Automática: Sem custo extra
+✅ Load Balancing: Distribuição inteligente
+✅ Failover para LLaVA Local: Completamente gratuito
+✅ Queue Management: Gerenciamento de fila
+✅ Error Recovery: Recuperação automática
+```
+
+**Como Funciona o Fallback Gratuito:**
+```
+Requisição com Imagem
+        ↓
+Tenta GLM-4V (Pode ter custo ou estar indisponível)
+        ↓
+❌ Falha? Usa LLaVA Local (100% GRATUITO)
+        ↓
+✅ Retorna resposta com melhor modelo disponível
+```
+
+#### **4. Segurança e Proteção (Gratuita)**
+- ✅ Criptografia WSS/TLS 1.3: Sem custo
+- ✅ Autenticação JWT: Sem custo
+- ✅ Proteção DDoS: Incluída gratuitamente
+- ✅ SSL/TLS: Certificados válidos inclusos
+
+#### **5. Infraestrutura e Performance (Parcialmente Gratuita)**
+- ✅ **CDN Global**: Sem cobranças adicionais
+- ✅ **Latência <200ms**: Otimização incluída
+- ✅ **99.9% SLA**: Garantia de disponibilidade
+- ✅ **Load Balancing**: Distribuição automática
+
+---
+
+### 💳 Partes PAGAS do Serviço Xiaozhi.me
+
+#### **1. Modelos de IA Avançados (Pago)**
+
+**GLM-4V (Zhipu) - COM CUSTO:**
+- 💰 **Custo:** ¥0.1-0.5 / 1K tokens (~R$ 0.08-0.40)
+- 📌 **Status Atual:** Token expirado/inválido (não está sendo cobrado)
+- ⚠️ **Quando Usar:** Análise de imagens de alta qualidade
+- ℹ️ **Nossa Implementação:** Usando LLaVA local como fallback
+
+**GPT-4V (OpenAI) - COM CUSTO (opcional):**
+- 💰 **Custo:** $0.01-0.03 / 1K tokens (~R$ 0.05-0.15)
+- 📌 **Integração:** Disponível mas não ativa por padrão
+- ⚠️ **Quando Usar:** Máxima qualidade de respostas
+
+**LLaVA (Ollama) - 100% GRATUITO:**
+- 🆓 **Custo:** Gratuito (Open Source)
+- 📌 **Status:** Ativo como fallback padrão
+- ✅ **Quando Usar:** Produção, desenvolvimento, análise de imagens
+- 🎯 **Nossa Recomendação:** Melhor custo-benefício
+
+#### **2. Requisições Além do Limite Gratuito (Pago)**
+
+```
+Ferramenta          Limite Gratuito    Preço Extra
+────────────────────────────────────────────────
+Análise Imagens     10/dia             ¥0.05 cada
+Busca Web           20/dia             ¥0.02 cada
+Informações         50/dia             ¥0.01 cada
+Ba Zi               5/dia              ¥0.10 cada
+```
+
+#### **3. Armazenamento Avançado (Pago)**
+- 💾 **Histórico expandido:** Além de 30 dias
+- 🎯 **Storage ilimitado:** Acima de 10GB
+- 📊 **Analytics avançados:** Relatórios premium
+
+#### **4. Recursos Premium (Pago Opcional)**
+- 🔌 **Webhooks avançados:** Triggers customizados
+- 📡 **API rate limit superior:** Acima de 1000 req/min
+- 🛡️ **Suporte prioritário 24/7:** SLA garantido
+- 🔧 **Integrações customizadas:** Desenvolvimento especial
+
+---
+
+## 💡 Estratégia de Uso GRATUITO do ASSISTENTE-SHI
+
+### **Usando 100% Gratuito:**
+
+```python
+# Configuração para uso totalmente gratuito
+{
+  "llm": {
+    "api": "ollama",        # Gratuito (LLaVA local)
+    "model": "llava:7b",    # Gratuito
+    "base_url": "http://localhost:11434/api"
+  },
+  "mcp": {
+    "endpoint": "wss://api.xiaozhi.me/mcp/",  # Gratuito
+    "token": "seu_jwt_aqui"
+  },
+  "tools": {
+    "use_paid_features": false   # Desativa análise paga
+  }
+}
+```
+
+### **Funcionalidades Gratuitas Ativas:**
+
+✅ **Sempre Disponíveis (100% Gratuito):**
+- Controle de Sistema (Volume, Aplicativos)
+- Calendário (Criar, Editar, Listar)
+- Temporizadores
+- Controle de Música Local
+- Screenshots e Fotos Locais
+- Comunicação via WebSocket Seguro
+- Processamento de Linguagem Natural (LLaVA)
+- Reconexão Automática
+
+⚠️ **Com Limite Diário (Gratuito até X requisições):**
+- Análise de Imagens: 10/dia
+- Busca Web: 20/dia
+- Informações Gerais: 50/dia
+- Ba Zi: 5/dia
+
+❌ **Não Implementados (Pagariam):**
+- GLM-4V Vision (Custo ¥0.1-0.5/1K tokens)
+- GPT-4V Vision (Custo $0.01-0.03/1K tokens)
+- Análise Premium Além do Limite
+- Suporte Premium Prioritário
+
+---
+
+## 💰 Custo Real do ASSISTENTE-SHI Hoje
+
+```
+┌─────────────────────────────────────────┐
+│        ASSISTENTE-SHI - Custo 2026      │
+├─────────────────────────────────────────┤
+│                                         │
+│ 🆓 Infraestrutura Xiaozhi: GRATUITA   │
+│    - Endpoint MCP                      │
+│    - WebSocket Seguro                  │
+│    - Load Balancing                    │
+│    - CDN Global                        │
+│                                         │
+│ 🆓 Ferramentas Básicas: GRATUITAS      │
+│    - Sistema (4 tools)                 │
+│    - Calendário (7 tools)              │
+│    - Música (7 tools)                  │
+│    - Timer (3 tools)                   │
+│    - Câmera (2 tools)                  │
+│                                         │
+│ 🆓 IA Local: GRATUITA                  │
+│    - LLaVA (Ollama)                    │
+│    - Visão Computacional               │
+│    - Processamento Natural Language     │
+│                                         │
+│ ╔═════════════════════════════════════╗│
+│ ║  CUSTO TOTAL MENSAL: R$ 0,00 ✅     ║│
+│ ╚═════════════════════════════════════╝│
+│                                         │
+│ 📝 Observações:                         │
+│ - GLM-4V desabilitado (token expirado) │
+│ - LLaVA como IA principal (grátis)    │
+│ - Limites gratuitos: 10+20+50+5/dia   │
+│ - Acima do limite: Paga variável      │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+---
+
 ### 🚀 Performance e Infraestrutura
 
 - **✅ Servidores Distribuídos Globalmente** - CDN com pontos de presença em múltiplas regiões (América Latina, EUA, Europa, Ásia)
