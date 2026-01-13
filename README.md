@@ -167,6 +167,533 @@ ASSISTENTE-SHI/
 └── requirements.txt                 # Dependências Python
 ```
 
+## 🔄 Fluxos e Diagramas do Projeto
+
+### 1️⃣ Fluxo de Estados da Aplicação
+
+```
+                              INICIALIZAÇÃO DO SISTEMA
+                                      |
+                                      v
+                          +-------+----------+
+                          |   CARREGANDO    |
+                          | Configurações   |
+                          +-------+----------+
+                                  |
+                                  v
+                          +-------+----------+
+                          |   ATIVANDO      |
+                          | Dispositivo     |
+                          +-------+----------+
+                                  |
+                                  v
+╔══════════════════════════════════════════════════════════╗
+║                   MÁQUINA DE ESTADOS PRINCIPAL           ║
+║                                                          ║
+║     (Palavra-chave) ou (Botão GUI)                      ║
+║                      |                                   ║
+║                      v                                   ║
+║        +---------+        +---------------+              ║
+║        | OCIOSO  |------> | CONECTANDO    |              ║
+║        +---------+        +-----+---------+              ║
+║            ^                    |                        ║
+║            |                    |                        ║
+║  Encerrou  |                    v                        ║
+║   Áudio    |         +----------+----------+              ║
+║            |         | ESCUTANDO / AGUARD. |              ║
+║            |         +----------+----------+              ║
+║            |                    |                        ║
+║            |      (Áudio detectado)                      ║
+║            |         VAD ativado                         ║
+║            |                    |                        ║
+║            |                    v                        ║
+║            |         +----------+----------+              ║
+║            |         | PROCESSANDO ÁUDIO   |              ║
+║            |         | (STT em andamento)  |              ║
+║            |         +----------+----------+              ║
+║            |                    |                        ║
+║            |    (STT completo)  |                        ║
+║            |                    v                        ║
+║            |         +----------+----------+              ║
+║            +-------- | CONVERSANDO / LLM  |              ║
+║              Fim     | (Processando IA)    |              ║
+║                      +----------+----------+              ║
+║                                 |                        ║
+║                    (Resposta pronta)                     ║
+║                                 |                        ║
+║                                 v                        ║
+║                      +----------+----------+              ║
+║                      | REPRODUZINDO ÁUDIO  |              ║
+║                      | (TTS em andamento)  |              ║
+║                      +----------+----------+              ║
+║                                 |                        ║
+║                    (Reprodução finalizada)              ║
+║                                 |                        ║
+║                                 v                        ║
+║                      +---------+--------+                ║
+║                      | Retorna ESCUTANDO |               ║
+║                      | (próxima iteração) |              ║
+║                      +-------------------+               ║
+║                                                          ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+### 2️⃣ Arquitetura em Camadas do Sistema
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    CAMADA DE APRESENTAÇÃO                       │
+│  ┌──────────────┐                      ┌──────────────┐         │
+│  │ Interface    │                      │ Linha de     │         │
+│  │ Gráfica      │                      │ Comando      │         │
+│  │ (PyQt5)      │                      │ (CLI)        │         │
+│  └──────┬───────┘                      └──────┬───────┘         │
+│         │                                     │                 │
+└─────────┼─────────────────────────────────────┼─────────────────┘
+          │                                     │
+┌─────────┼─────────────────────────────────────┼─────────────────┐
+│ CAMADA  │  Gerenciador de Aplicação (Application.py)           │
+│  DE     │  - Controle de Estado                                │
+│LÓGICA   │  - Orquestração de Componentes                       │
+│         │  - Ciclo de Vida da Aplicação                        │
+│         │                                     │                 │
+└─────────┼─────────────────────────────────────┼─────────────────┘
+          │
+┌─────────┴─────────────────────────────────────────────────────────┐
+│              CAMADA DE PROCESSAMENTO / NEGÓCIO                    │
+│                                                                   │
+│  ┌────────────────────┐  ┌────────────────────┐                 │
+│  │ Sistema de Audio   │  │ Sistema MCP        │                 │
+│  │ - AudioCodec       │  │ - 32+ Ferramentas  │                 │
+│  │ - VAD Detector     │  │ - Calendário       │                 │
+│  │ - Wake Word        │  │ - Música           │                 │
+│  │ - AEC              │  │ - Câmera           │                 │
+│  └────────────────────┘  │ - Sistema          │                 │
+│                           │ - Mapas, etc      │                 │
+│  ┌────────────────────┐  │                    │                 │
+│  │ Sistema IoT        │  │                    │                 │
+│  │ - Thing Manager    │  │                    │                 │
+│  │ - Device Manager   │  │                    │                 │
+│  │ - Property Sync    │  │                    │                 │
+│  └────────────────────┘  └────────────────────┘                 │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
+          │
+┌─────────┴────────────────────────────────────────────────────────┐
+│              CAMADA DE PROTOCOLO / COMUNICAÇÃO                   │
+│                                                                  │
+│  ┌─────────────────────────┐  ┌──────────────────────────┐     │
+│  │ WebSocket Protocol      │  │ MQTT Protocol            │     │
+│  │ - SSL/TLS Encryption    │  │ - Message Queue          │     │
+│  │ - Handshake             │  │ - Pub/Sub                │     │
+│  │ - Binary Frames         │  │ - Auto Reconnect         │     │
+│  │ - Error Recovery        │  │ - Topic Management       │     │
+│  └─────────────────────────┘  └──────────────────────────┘     │
+│                                                                  │
+└────────────────┬─────────────────────────────────────────────────┘
+                 │
+         ┌───────┴────────┐
+         │                │
+         v                v
+    ┌──────────────┐  ┌──────────────┐
+    │ Servidor API │  │ Servidor MQTT │
+    │ (Remoto)     │  │ (Remoto)      │
+    └──────────────┘  └──────────────┘
+```
+
+### 3️⃣ Fluxo de Processamento de Áudio
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    ENTRADA DE ÁUDIO (MIC)                        │
+│                    (48kHz, 2 canais)                            │
+└────────────────────────┬─────────────────────────────────────────┘
+                         │
+                         v
+┌──────────────────────────────────────────────────────────────────┐
+│                   PROCESSAMENTO DE ENTRADA                       │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │ 1. Mistura de Canais: 2ch → 1ch                           │  │
+│  └────────────────────────────────────────────────────────────┘  │
+└────────────────────────┬─────────────────────────────────────────┘
+                         │
+                         v
+┌──────────────────────────────────────────────────────────────────┐
+│              Reamostragem: 48kHz → 16kHz                         │
+│              (Compatível com processamento de fala)              │
+└────────────────────────┬─────────────────────────────────────────┘
+                         │
+         ┌───────────────┼───────────────┐
+         │               │               │
+         v               v               v
+    ┌─────────┐  ┌──────────┐  ┌──────────────┐
+    │   VAD   │  │ Wake Word│  │  Streaming   │
+    │Detector │  │ Detection│  │ para Servidor│
+    │(Detecção│  │(Detecção │  │              │
+    │ Atividade)  │Palavra)  │  │              │
+    └────┬────┘  └────┬─────┘  └──────┬───────┘
+         │            │               │
+         └────────────┼───────────────┘
+                      │
+                      v
+         ┌────────────────────────┐
+         │ Fila de Áudio Principal│
+         │ (BufferManager)        │
+         └────────┬───────────────┘
+                  │
+      ┌───────────┼───────────────┐
+      │           │               │
+      v           v               v
+  ┌────────┐  ┌────────┐  ┌────────────┐
+  │  AEC   │  │ Opus   │  │ Enviar para│
+  │(Echo   │  │Encoder │  │ IA/Servidor│
+  │Cancel) │  │        │  │            │
+  └────┬───┘  └───┬────┘  └────┬───────┘
+       │          │            │
+       └──────────┼────────────┘
+                  │
+                  v
+         ┌──────────────────────┐
+         │ WebSocket/MQTT       │
+         │ (Envio de Áudio)     │
+         └──────────────────────┘
+```
+
+### 4️⃣ Arquitetura do Sistema MCP (Model Context Protocol)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    SERVIDOR MCP                                 │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │              MCPServer (Gerenciador Central)               │ │
+│  │  - Registra 32+ ferramentas                               │ │
+│  │  - Processa requisições JSON-RPC                          │ │
+│  │  - Valida parâmetros                                      │ │
+│  │  - Retorna resultados                                     │ │
+│  └────────┬─────────────────────────────────────────────────┘ │
+│           │                                                    │
+│  ┌────────┴────────────────────────────────────────────────┐  │
+│  │              FERRAMENTAS REGISTRADAS (32+)               │  │
+│  │                                                          │  │
+│  │ ┌──────────────────────────────────────────────────┐   │  │
+│  │ │ CONTROLE DO SISTEMA (4 ferramentas)             │   │  │
+│  │ │ - set_volume()       - get_volume()             │   │  │
+│  │ │ - launch()           - list_running()           │   │  │
+│  │ └──────────────────────────────────────────────────┘   │  │
+│  │                                                          │  │
+│  │ ┌──────────────────────────────────────────────────┐   │  │
+│  │ │ GERENCIADOR DE CALENDÁRIO (7 ferramentas)       │   │  │
+│  │ │ - create_event()     - get_events()             │   │  │
+│  │ │ - update_event()     - delete_event()           │   │  │
+│  │ │ - get_upcoming_events()                         │   │  │
+│  │ │ - get_categories()                              │   │  │
+│  │ └──────────────────────────────────────────────────┘   │  │
+│  │                                                          │  │
+│  │ ┌──────────────────────────────────────────────────┐   │  │
+│  │ │ REPRODUTOR DE MÚSICA (7 ferramentas)            │   │  │
+│  │ │ - search_and_play()  - pause()                  │   │  │
+│  │ │ - resume()           - stop()                   │   │  │
+│  │ │ - seek()             - get_lyrics()             │   │  │
+│  │ │ - get_local_playlist()                          │   │  │
+│  │ └──────────────────────────────────────────────────┘   │  │
+│  │                                                          │  │
+│  │ ┌──────────────────────────────────────────────────┐   │  │
+│  │ │ GERENCIADOR DE TEMPORIZADORES (3 ferramentas)   │   │  │
+│  │ │ - start_countdown()  - cancel_countdown()       │   │  │
+│  │ │ - get_active_timers()                           │   │  │
+│  │ └──────────────────────────────────────────────────┘   │  │
+│  │                                                          │  │
+│  │ ┌──────────────────────────────────────────────────┐   │  │
+│  │ │ VISÃO COMPUTACIONAL (2 ferramentas)             │   │  │
+│  │ │ - take_photo()       - take_screenshot()        │   │  │
+│  │ └──────────────────────────────────────────────────┘   │  │
+│  │                                                          │  │
+│  │ ┌──────────────────────────────────────────────────┐   │  │
+│  │ │ ASTROLOGIA BA ZI (6 ferramentas)                │   │  │
+│  │ │ - get_bazi_detail()                             │   │  │
+│  │ │ - analyze_marriage_compatibility()              │   │  │
+│  │ │ - get_chinese_calendar()                        │   │  │
+│  │ │ - build_bazi_from_lunar_datetime()              │   │  │
+│  │ └──────────────────────────────────────────────────┘   │  │
+│  │                                                          │  │
+│  │ + 3 ferramentas adicionais em desenvolvimento...        │  │
+│  │                                                          │  │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                 │
+└──────────────┬──────────────────────────────────────────────────┘
+               │
+      ┌────────┴────────┐
+      │                 │
+      v                 v
+ ┌─────────────┐  ┌─────────────┐
+ │  IA Remota  │  │  IoT Things │
+ │  (OpenAI,   │  │  (Devices)  │
+ │   Zhipu)    │  │             │
+ └─────────────┘  └─────────────┘
+```
+
+### 5️⃣ Fluxo Completo de Interação Usuário → IA → Resposta
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        USUÁRIO                                   │
+│             (Fala próximo ao microfone)                         │
+└────────────────────────┬─────────────────────────────────────────┘
+                         │
+                         v (Áudio capturado)
+┌──────────────────────────────────────────────────────────────────┐
+│              1. CAPTURA E PRÉ-PROCESSAMENTO                      │
+│  - AudioCodec (Mistura, Reamostragem)                           │
+│  - VAD (Detecção de Atividade de Fala)                          │
+│  - AEC (Cancelamento de Eco)                                    │
+└────────────────────────┬─────────────────────────────────────────┘
+                         │
+                         v
+┌──────────────────────────────────────────────────────────────────┐
+│         2. ENVIO PARA SERVIDOR (WebSocket/MQTT)                 │
+│  - Serialização JSON                                             │
+│  - Criptografia (WSS)                                           │
+│  - Compressão de áudio                                          │
+└────────────────────────┬─────────────────────────────────────────┘
+                         │
+                         v
+┌──────────────────────────────────────────────────────────────────┐
+│            3. PROCESSAMENTO NO SERVIDOR REMOTO                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ STT (Speech-to-Text)                                     │  │
+│  │ Converte áudio → Texto                                  │  │
+│  │ (Engine OpenAI/Zhipu)                                   │  │
+│  └──────────┬───────────────────────────────────────────────┘  │
+│             │ "Como está o tempo em São Paulo?"                │
+│             v                                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ LLM (Large Language Model)                               │  │
+│  │ Processa texto e gera resposta                          │  │
+│  │ Pode chamar MCP tools conforme necessário               │  │
+│  └──────────┬───────────────────────────────────────────────┘  │
+│             │ "A temperatura está 28°C, ensolarado"             │
+│             v                                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ TTS (Text-to-Speech)                                     │  │
+│  │ Converte texto → Áudio                                  │  │
+│  │ (Engine nativa do servidor)                             │  │
+│  └──────────┬───────────────────────────────────────────────┘  │
+│             │                                                   │
+└─────────────┼───────────────────────────────────────────────────┘
+              │
+              v (Áudio de resposta)
+┌──────────────────────────────────────────────────────────────────┐
+│         4. RECEPÇÃO DO ÁUDIO DE RESPOSTA                        │
+│  - Desserialização JSON                                         │
+│  - Descriptografia                                              │
+│  - Descompressão de áudio                                       │
+└────────────────────────┬─────────────────────────────────────────┘
+                         │
+                         v
+┌──────────────────────────────────────────────────────────────────┐
+│         5. PROCESSAMENTO DE SAÍDA DE ÁUDIO                      │
+│  - AudioCodec (Reamostragem: 24kHz → 44100Hz)                  │
+│  - Opus Decode (se necessário)                                  │
+│  - Normalização de volume                                       │
+└────────────────────────┬─────────────────────────────────────────┘
+                         │
+                         v
+┌──────────────────────────────────────────────────────────────────┐
+│       6. REPRODUÇÃO DE ÁUDIO (Speaker)                          │
+│  - Streaming para saída de áudio                                │
+│  - Sincronização com interface                                  │
+│  - Feedback visual (animação)                                   │
+└────────────────────────┬─────────────────────────────────────────┘
+                         │
+                         v
+┌──────────────────────────────────────────────────────────────────┐
+│                 USUÁRIO OUVE A RESPOSTA                          │
+│        (Sistema retorna ao estado ESCUTANDO)                    │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### 6️⃣ Fluxo de Inicialização do Sistema
+
+```
+  python main.py --mode gui --protocol websocket
+                         │
+                         v
+         ┌───────────────────────────────┐
+         │ parse_args()                  │
+         │ (Processar argumentos CLI)    │
+         └────────┬────────────────────────┘
+                  │
+                  v
+         ┌───────────────────────────────┐
+         │ setup_logging()               │
+         │ (Iniciar sistema de logs)     │
+         └────────┬────────────────────────┘
+                  │
+                  v
+         ┌───────────────────────────────┐
+         │ Detectar Wayland/X11          │
+         │ (Configurar variáveis QT)     │
+         └────────┬────────────────────────┘
+                  │
+                  v
+         ┌───────────────────────────────┐
+         │ Criar qasync event loop       │
+         │ (Loop asyncio para Qt5)       │
+         └────────┬────────────────────────┘
+                  │
+                  v
+    ┌────────────────────────────────────┐
+    │ handle_activation()                │
+    │ (Processar ativação do dispositivo)│
+    │                                    │
+    │ 1. SystemInitializer init          │
+    │ 2. Gerar Fingerprint               │
+    │ 3. Validar/Criar efuse.json        │
+    │ 4. Buscar configuração OTA         │
+    │ 5. Verificar WebSocket/MQTT        │
+    │ 6. Retornar resultado              │
+    └────────┬──────────────────────────┘
+             │ (Se ativação falhou)
+             v
+      ┌──────────────────┐
+      │ Encerrar programa│
+      │ (Exit code: 1)   │
+      └──────────────────┘
+
+    (Se ativação sucedeu)
+             │
+             v
+    ┌────────────────────────────────────┐
+    │ Application.get_instance()         │
+    │ (Obter instância singleton)        │
+    └────────┬──────────────────────────┘
+             │
+             v
+    ┌────────────────────────────────────┐
+    │ app.run(mode, protocol)            │
+    │                                    │
+    │ 1. Inicializar componentes         │
+    │ 2. Carregar configurações          │
+    │ 3. Inicializar protocolos          │
+    │ 4. Registrar ferramentas MCP       │
+    │ 5. Iniciar processamento de áudio  │
+    │ 6. Abrir interface (GUI/CLI)       │
+    │ 7. Entrar no loop de eventos       │
+    │                                    │
+    └────────┬──────────────────────────┘
+             │
+             v
+    ┌────────────────────────────────────┐
+    │ APLICAÇÃO RODANDO                  │
+    │ (Aguardando eventos do usuário)    │
+    └────────┬──────────────────────────┘
+             │
+       (Usuário pressiona Ctrl+C)
+             │
+             v
+    ┌────────────────────────────────────┐
+    │ Cleanup / Shutdown                 │
+    │ 1. Fechar conexões                 │
+    │ 2. Parar processamento de áudio    │
+    │ 3. Salvar configurações            │
+    │ 4. Liberar recursos                │
+    │ 5. Encerrar programa               │
+    └────────────────────────────────────┘
+```
+
+### 7️⃣ Fluxo de Protocolo de Comunicação
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    ESCOLHA DE PROTOCOLO                          │
+└────────────────┬──────────────────────────────────────────────────┘
+                 │
+        ┌────────┴────────┐
+        │                 │
+        v                 v
+┌────────────────┐  ┌──────────────────┐
+│ WebSocket      │  │ MQTT             │
+│ wss://api...   │  │ mqtt://broker... │
+└────────┬───────┘  └────────┬─────────┘
+         │                   │
+         v                   v
+  ┌──────────────┐   ┌──────────────┐
+  │ Handshake    │   │ Connect      │
+  │ TLS/SSL      │   │ CONNACK      │
+  │ Upgrade HTTP │   │              │
+  └──────┬───────┘   └──────┬───────┘
+         │                  │
+         v                  v
+  ┌──────────────┐   ┌──────────────┐
+  │ Autenticar   │   │ Subscribe    │
+  │ Token JWT    │   │ Topics       │
+  └──────┬───────┘   └──────┬───────┘
+         │                  │
+         v                  v
+  ┌──────────────┐   ┌──────────────┐
+  │ Send/Receive │   │ Pub/Sub      │
+  │ Binary Frames│   │ Messages     │
+  │ (Áudio)      │   │              │
+  └──────┬───────┘   └──────┬───────┘
+         │                  │
+         v                  v
+  ┌──────────────┐   ┌──────────────┐
+  │ Heartbeat    │   │ Keep Alive   │
+  │ (PING/PONG)  │   │ (PINGREQ)    │
+  └──────┬───────┘   └──────┬───────┘
+         │                  │
+         └────────┬─────────┘
+                  │
+                  v
+         ┌──────────────────┐
+         │ Conectado e Pronto│
+         │ para Trocar Dados │
+         └──────────────────┘
+```
+
+### 8️⃣ Fluxo de Sincronização de Estado IoT
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    GERENCIADOR IoT (ThingManager)                │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │                 DISPOSITIVOS VIRTUAIS                     │  │
+│  │                                                          │  │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │  │
+│  │  │ Lâmpada      │  │ Ar-cond.     │  │ Sensor Temp. │  │  │
+│  │  │ - power      │  │ - temp       │  │ - temp_read  │  │  │
+│  │  │ - brightness │  │ - mode       │  │ - humidity   │  │  │
+│  │  │ - color      │  │ - fan_speed  │  │              │  │  │
+│  │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │  │
+│  │         │                 │                 │          │  │
+│  └─────────┼─────────────────┼─────────────────┼──────────┘  │
+│            │                 │                 │             │
+│            └────────┬────────┴────────┬────────┘             │
+│                     │                 │                      │
+│              ┌──────v────────┐  ┌─────v──────┐              │
+│              │ Sincronizar   │  │ Obter      │              │
+│              │ Estado com    │  │ Estado     │              │
+│              │ Servidor      │  │ Atual      │              │
+│              └──────┬────────┘  └─────┬──────┘              │
+│                     │                 │                     │
+│                     v                 v                     │
+│              ┌────────────────────────────┐                 │
+│              │ Atualizar Cache Local      │                 │
+│              │ (PropertyCache)            │                 │
+│              └────────┬───────────────────┘                 │
+│                       │                                     │
+│            ┌──────────┴────────────┐                       │
+│            │                       │                       │
+│            v                       v                       │
+│     ┌──────────────┐      ┌──────────────┐                │
+│     │ Notificar    │      │ Atualizar UI │                │
+│     │ Listeners    │      │ / Dashboard  │                │
+│     └──────────────┘      └──────────────┘                │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
+```
+
 ## 🔄 Status Atual
 
 ### ✅ Funcional
