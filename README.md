@@ -1,300 +1,244 @@
-# ASSISTENTE-SHI - Xiaozhi AI Assistant
+# ASSISTENTE-SHI - Xiaozhi AI Assistant 🤖
 
 <p align="center">
   <a href="https://github.com/MarceloClaro/ASSISTENTE-SHI/releases/latest">
     <img src="https://img.shields.io/github/v/release/MarceloClaro/ASSISTENTE-SHI?style=flat-square&logo=github&color=blue" alt="Release"/>
   </a>
   <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="License: MIT"/>
+    <img src="https://img.shields.io/badge/Licença-MIT-green.svg?style=flat-square" alt="License: MIT"/>
   </a>
   <a href="https://github.com/MarceloClaro/ASSISTENTE-SHI/stargazers">
-    <img src="https://img.shields.io/github/stars/MarceloClaro/ASSISTENTE-SHI?style=flat-square&logo=github" alt="Stars"/>
+    <img src="https://img.shields.io/github/stars/MarceloClaro/ASSISTENTE-SHI?style=flat-square&logo=github" alt="Estrelas"/>
   </a>
 </p>
 
-Português Brasileiro | [中文简体](README.md)
+**Português Brasileiro** | [中文简体](README.zh-CN.md) | [English](README.en.md)
 
-## 项目简介
+## 📋 Sobre o Projeto
 
-py-xiaozhi 是一个使用 Python 实现的小智语音客户端，旨在通过代码学习和在没有硬件条件下体验 AI 小智的语音功能。
-本仓库是基于[xiaozhi-esp32](https://github.com/78/xiaozhi-esp32)移植
+**ASSISTENTE-SHI** é um cliente Python avançado de inteligência artificial (IA) baseado na arquitetura do Xiaozhi. Ele permite interação por voz com IA de forma natural e fluida, oferecendo suporte completo a múltiplas ferramentas MCP, integração IoT, processamento de áudio de alta qualidade e interface gráfica moderna.
 
-## 演示
+Este é um fork personalizado do [py-xiaozhi](https://github.com/huangjunsen0406/py-xiaozhi) com melhorias, correções e otimizações específicas.
 
-- [Bilibili 演示视频](https://www.bilibili.com/video/BV1HmPjeSED2/#reply255921347937)
+## ✨ Características Principais
 
-![Image](./documents/docs/guide/images/系统界面.png)
+### 🎯 Funcionalidades de IA
 
-## 功能特点
+- **Interação por Voz com IA**: Suporte completo a entrada de voz, reconhecimento de fala e resposta inteligente
+- **Visão Computacional**: Reconhecimento e processamento de imagens com capacidades multi-modal
+- **Despertar Inteligente**: Múltiplas palavras-chave de ativação (configuráveis)
+- **Modo de Conversa Contínua**: Experiência de conversa fluida e natural
 
-### 🎯 核心AI功能
+### 🔧 Ecossistema de Ferramentas MCP (32+ Ferramentas)
 
-- **AI语音交互**：支持语音输入与识别，实现智能人机交互，提供自然流畅的对话体验
-- **视觉多模态**：支持图像识别和处理，提供多模态交互能力，理解图像内容
-- **智能唤醒**：支持多种唤醒词激活交互，免去手动操作的烦恼（可配置开启）
-- **自动对话模式**：实现连续对话体验，提升用户交互流畅度
+- **Controle de Sistema**: Monitoramento, gerenciamento de aplicativos, controle de volume
+- **Gerenciador de Agenda**: Criar, consultar, atualizar, deletar eventos com lembretes inteligentes
+- **Tarefas Agendadas**: Temporizadores com suporte a execução atrasada
+- **Reprodutor de Música**: Busca online, controle de reprodução, letras, cache local
+- **Consulta de Passagens Aéreas**: Integração com serviços de transporte
+- **Busca na Web**: Pesquisa Bing e análise de conteúdo
+- **Receitas**: Banco de dados rico de receitas com recomendações
+- **Mapas**: Serviços de mapeamento com geocodificação, planejamento de rotas, busca por proximidade
+- **Ba Zi (Astrologia Chinesa)**: Análise de compatibilidade matrimonial e calendário lunar
+- **Câmera**: Captura de imagens e análise com IA
 
-### 🔧 MCP工具生态系统
+### 🏠 Integração IoT
 
-- **系统控制工具**：系统状态监控、应用程序管理、音量控制、设备管理等
-- **日程管理工具**：全功能日程管理，支持创建、查询、更新、删除事件，智能分类和提醒
-- **定时任务工具**：倒计时器功能，支持延时执行MCP工具，多任务并行管理
-- **音乐播放工具**：在线音乐搜索播放，支持播放控制、歌词显示、本地缓存管理
-- **12306查询工具**：12306铁路票务查询，支持车票查询、中转查询、列车路线查询
-- **搜索工具**：网络搜索和网页内容获取，支持必应搜索和智能内容解析
-- **菜谱工具**：丰富菜谱库，支持菜谱搜索、分类查询、智能推荐
-- **地图工具**：高德地图服务，支持地理编码、路径规划、周边搜索、天气查询
-- **八字命理工具**：传统八字命理分析，支持八字计算、婚姻分析、黄历查询
-- **摄像头工具**：图像捕获和AI分析，支持拍照识别和智能问答
+- **Gerenciamento Unificado**: Arquitetura baseada em padrão Thing para controle de dispositivos
+- **Controle de Casa Inteligente**: Luzes, volume, sensores de temperatura
+- **Sincronização de Estado em Tempo Real**: Monitoramento contínuo com atualizações incrementais
+- **Design Extensível**: Drivers modulares para novos dispositivos
 
-### 🏠 IoT设备集成
+### 🎵 Processamento de Áudio Avançado
 
-- **设备管理架构**：基于Thing模式的统一设备管理，支持属性和方法的异步调用
-- **智能家居控制**：支持灯光、音量、温度传感器等设备控制
-- **状态同步机制**：实时状态监控，支持增量更新和并发状态获取
-- **可扩展设计**：模块化设备驱动，易于添加新设备类型
+- **Processamento Multinível**: Codec Opus, reamostragem em tempo real
+- **Detecção de Atividade de Fala (VAD)**: Interrupção inteligente de áudio
+- **Detecção de Palavra-Chave**: Modelos Sherpa-ONNX com suporte a pinyin
+- **Gerenciamento de Stream**: Entradas/saídas independentes com recuperação de erros
+- **Cancelamento de Eco**: Integração com módulo de processamento de áudio WebRTC
+- **Gravação de Áudio do Sistema**: Captura de áudio do sistema operacional
 
-### 🎵 高级音频处理
+### 🖥️ Interface do Usuário
 
-- **多级音频处理**：支持Opus编解码、实时重采样
-- **语音活动检测**：VAD检测器实现智能打断，支持语音活动实时监控
-- **唤醒词检测**：基于Sherpa-ONNX的离线语音识别，支持多唤醒词和拼音匹配
-- **音频流管理**：独立输入输出流，支持流重建和错误恢复
-- **音频回声消除**：集成WebRTC音频处理模块，提供高质量的回声消除功能
-- **系统音频录制**：支持系统音频录制，实现音频环回处理
+- **Interface Gráfica**: GUI moderna baseada em PyQt5 com expressões e exibição de texto
+- **Modo Linha de Comando**: CLI para ambientes sem GUI
+- **Bandeja do Sistema**: Suporte para execução em background
+- **Atalhos Globais**: Teclas de atalho personalizáveis
+- **Painel de Configurações**: Interface completa para personalização
 
-### 🖥️ 用户界面
+### 🔒 Segurança e Estabilidade
 
-- **图形化界面**：基于PyQt5的现代GUI，支持小智表情与文本显示，增强视觉体验
-- **命令行模式**：支持CLI运行，适用于嵌入式设备或无GUI环境
-- **系统托盘**：后台运行支持，集成系统托盘功能
-- **全局快捷键**：支持全局快捷键操作，提升使用便捷性
-- **设置界面**：完整的设置管理界面，支持配置自定义
+- **Transmissão de Áudio Criptografada**: Protocolo WSS seguro
+- **Sistema de Ativação de Dispositivo**: Suporte a protocolos v1/v2
+- **Recuperação de Erros**: Reconexão automática e tratamento robusto
 
-### 🔒 安全与稳定
+### 🌐 Suporte Multiplataforma
 
-- **加密音频传输**：支持WSS协议，保障音频数据的安全性，防止信息泄露
-- **设备激活系统**：支持v1/v2双协议激活，自动处理验证码和设备指纹
-- **错误恢复**：完整的错误处理和恢复机制，支持断线重连
+- **Compatibilidade**: Windows 10+, macOS 10.15+, Linux
+- **Protocolos**: WebSocket e MQTT
+- **Modos**: GUI e CLI
+- **Otimização**: Específica para cada plataforma
 
-### 🌐 跨平台支持
+## 🚀 Início Rápido
 
-- **系统兼容**：兼容Windows 10+、macOS 10.15+和Linux系统
-- **协议支持**：支持WebSocket和MQTT双协议通信
-- **多环境部署**：支持GUI和CLI双模式，适应不同部署环境
-- **平台优化**：针对不同平台的音频和系统控制优化
+### Requisitos do Sistema
 
-### 🔧 开发友好
+**Mínimo:**
+- Python 3.9 - 3.12
+- Windows 10+, macOS 10.15+, ou Linux
+- Microfone e alto-falante
+- Conexão de internet estável
 
-- **模块化架构**：清晰的代码结构和职责分离，便于二次开发
-- **异步优先**：基于asyncio的事件驱动架构，高性能并发处理
-- **配置管理**：分层配置系统，支持点记法访问和动态更新
-- **日志系统**：完整的日志记录和调试支持
-- **API文档**：详细的代码文档和使用指南
+**Recomendado:**
+- 8GB+ RAM
+- CPU com suporte AVX
+- 2GB espaço em disco
+- Áudio com taxa de amostragem de 16kHz
 
-## 系统要求
-
-### 基础要求
-
-- **Python版本**：3.9 - 3.12
-- **操作系统**：Windows 10+、macOS 10.15+、Linux
-- **音频设备**：麦克风和扬声器设备
-- **网络连接**：稳定的互联网连接（用于AI服务和在线功能）
-
-### 推荐配置
-
-- **内存**：至少4GB RAM（推荐8GB+）
-- **处理器**：支持AVX指令集的现代CPU
-- **存储**：至少2GB可用磁盘空间（用于模型文件和缓存）
-- **音频**：支持16kHz采样率的音频设备
-
-### 可选功能要求
-
-- **语音唤醒**：需要下载Sherpa-ONNX语音识别模型
-- **摄像头功能**：需要摄像头设备和OpenCV支持
-
-## 请先看这里
-
-- 仔细阅读 [项目文档](https://huangjunsen0406.github.io/py-xiaozhi/) 启动教程和文件说明都在里面了
-- main是最新代码，每次更新都需要手动重新安装一次pip依赖防止我新增依赖后你们本地没有
-
-### 📖 快速开始指南
-
-- **[VSCode 完整指南（葡萄牙语）](GUIA_VSCODE_PT.md)** - 详细的 VSCode 设置和运行指南
-- **[VSCode Complete Guide (English)](VSCODE_GUIDE_EN.md)** - Complete setup and run guide for VSCode
-- [从零开始使用小智客户端（视频教程）](https://www.bilibili.com/video/BV1dWQhYEEmq/?vd_source=2065ec11f7577e7107a55bbdc3d12fce)
-
-## 技术架构
-
-### 核心架构设计
-
-- **事件驱动架构**: 基于asyncio的异步事件循环，支持高并发处理
-- **分层设计**: 清晰的应用层、协议层、设备层、UI层分离
-- **单例模式**: 核心组件采用单例模式，确保资源统一管理
-- **插件化**: MCP工具系统和IoT设备支持插件化扩展
-
-### 关键技术组件
-
-- **音频处理**: Opus编解码、WebRTC回声消除、实时重采样、系统音频录制
-- **语音识别**: Sherpa-ONNX离线模型、语音活动检测、唤醒词识别
-- **协议通信**: WebSocket/MQTT双协议支持、加密传输、自动重连
-- **配置系统**: 分层配置、点记法访问、动态更新、JSON/YAML支持
-
-### 性能优化
-
-- **异步优先**: 全系统异步架构，避免阻塞操作
-- **内存管理**: 智能缓存、垃圾回收
-- **音频优化**: 5ms低延迟处理、队列管理、流式传输
-- **并发控制**: 任务池管理、信号量控制、线程安全
-
-### 安全机制
-
-- **加密通信**: WSS/TLS加密、证书验证
-- **设备认证**: 双协议激活、设备指纹识别
-- **权限控制**: 工具权限管理、API访问控制
-- **错误隔离**: 异常隔离、故障恢复、优雅降级
-
-## 开发指南
-
-### 项目结构
-
-```
-py-xiaozhi/
-├── main.py                     # 应用程序主入口（CLI参数处理）
-├── src/
-│   ├── application.py          # 应用程序核心逻辑
-│   ├── audio_codecs/           # 音频编解码器
-│   │   ├── aec_processor.py    # 音频回声消除处理器
-│   │   ├── audio_codec.py      # 音频编解码基础类
-│   │   └── system_audio_recorder.py  # 系统音频录制器
-│   ├── audio_processing/       # 音频处理模块
-│   │   ├── vad_detector.py     # 语音活动检测
-│   │   └── wake_word_detect.py # 唤醒词检测
-│   ├── core/                   # 核心组件
-│   │   ├── ota.py             # 在线更新模块
-│   │   └── system_initializer.py # 系统初始化器
-│   ├── display/                # 显示界面抽象层
-│   ├── iot/                    # IoT设备管理
-│   │   ├── thing.py           # 设备基类
-│   │   ├── thing_manager.py   # 设备管理器
-│   │   └── things/            # 具体设备实现
-│   ├── mcp/                    # MCP工具系统
-│   │   ├── mcp_server.py      # MCP服务器
-│   │   └── tools/             # 各种工具模块
-│   ├── protocols/              # 通信协议
-│   ├── utils/                  # 工具函数
-│   └── views/                  # UI视图组件
-├── libs/                       # 第三方原生库
-│   ├── libopus/               # Opus音频编解码库
-│   ├── webrtc_apm/            # WebRTC音频处理模块
-│   └── SystemAudioRecorder/   # 系统音频录制工具
-├── config/                     # 配置文件目录
-├── models/                     # 语音模型文件
-├── assets/                     # 静态资源文件
-├── scripts/                    # 辅助脚本
-├── requirements.txt            # Python依赖包列表
-└── build.json                  # 构建配置文件
-```
-
-### 开发环境设置
+### Instalação
 
 ```bash
-# 克隆项目
-git clone https://github.com/huangjunsen0406/py-xiaozhi.git
-cd py-xiaozhi
+# Clonar repositório
+git clone https://github.com/MarceloClaro/ASSISTENTE-SHI.git
+cd ASSISTENTE-SHI
 
-# 安装依赖
+# Criar ambiente virtual
+python -m venv venv
+source venv/bin/activate  # No Windows: venv\Scripts\activate
+
+# Instalar dependências
 pip install -r requirements.txt
 
-# 代码格式化
-./format_code.sh
+# Executar aplicação (GUI)
+python main.py --mode gui --protocol websocket
 
-# 运行程序 - GUI模式（默认）
-python main.py
-
-# 运行程序 - CLI模式
+# Ou modo CLI
 python main.py --mode cli
-
-# 指定通信协议
-python main.py --protocol websocket  # WebSocket（默认）
-python main.py --protocol mqtt       # MQTT协议
 ```
 
-### 核心开发模式
+## 📖 Documentação e Guias
 
-- **异步优先**: 使用`async/await`语法，避免阻塞操作
-- **错误处理**: 完整的异常处理和日志记录
-- **配置管理**: 使用`ConfigManager`统一配置访问
-- **测试驱动**: 编写单元测试，确保代码质量
+- **[Guia Completo VSCode (PT)](GUIA_VSCODE_PT.md)** - Configuração detalhada do VSCode
+- **[Documentação Técnica](docs/)** - Arquitetura e desenvolvimento
+- **[FAQ - Perguntas Frequentes](docs/FAQ.md)** - Dúvidas comuns
 
-### 扩展开发
+## 🏗️ Arquitetura Técnica
 
-- **添加MCP工具**: 在`src/mcp/tools/`目录创建新工具模块
-- **添加IoT设备**: 继承`Thing`基类实现新设备
-- **添加协议**: 实现`Protocol`抽象基类
-- **添加界面**: 扩展`BaseDisplay`实现新的UI组件
+### Design de Arquitetura
 
-### 状态流转图
+- **Arquitetura Orientada por Eventos**: Loop assíncrono asyncio com processamento de alta concorrência
+- **Design em Camadas**: Separação clara entre aplicação, protocolo, dispositivos e UI
+- **Padrão Singleton**: Componentes principais com gerenciamento centralizado de recursos
+- **Arquitetura Plugável**: Sistema MCP e dispositivos IoT extensíveis
+
+### Componentes Principais
+
+- **Processamento de Áudio**: Opus, WebRTC AEC, reamostragem, gravação do sistema
+- **Reconhecimento de Fala**: Sherpa-ONNX offline, VAD, detecção de palavra-chave
+- **Protocolos**: WebSocket/MQTT dual, transmissão criptografada, reconexão automática
+- **Sistema de Configuração**: Configuração em camadas, acesso por pontos, JSON/YAML
+
+### Otimizações de Desempenho
+
+- **Assincronismo Completo**: Sem operações bloqueantes
+- **Gerenciamento de Memória**: Cache inteligente e coleta de lixo
+- **Áudio de Baixa Latência**: Processamento em 5ms com gerenciamento de fila
+- **Controle de Concorrência**: Pool de tarefas, semáforos, segurança de thread
+
+## 📁 Estrutura do Projeto
 
 ```
-                        +----------------+
-                        |                |
-                        v                |
-+------+  唤醒词/按钮  +------------+   |   +------------+
-| IDLE | -----------> | CONNECTING | --+-> | LISTENING  |
-+------+              +------------+       +------------+
-   ^                                            |
-   |                                            | 语音识别完成
-   |          +------------+                    v
-   +--------- |  SPEAKING  | <-----------------+
-     完成播放 +------------+
+ASSISTENTE-SHI/
+├── main.py                          # Ponto de entrada
+├── src/
+│   ├── application.py               # Lógica central
+│   ├── audio_codecs/                # Codificação de áudio
+│   ├── audio_processing/            # Processamento de áudio
+│   ├── core/                        # Componentes principais
+│   ├── display/                     # Camada abstrata de interface
+│   ├── iot/                         # Gerenciamento IoT
+│   ├── mcp/                         # Sistema de ferramentas MCP
+│   ├── protocols/                   # Protocolos de comunicação
+│   ├── utils/                       # Funções utilitárias
+│   └── views/                       # Componentes de UI
+├── config/                          # Arquivos de configuração
+├── models/                          # Modelos de IA
+├── logs/                            # Arquivos de log
+└── requirements.txt                 # Dependências Python
 ```
 
-## 贡献指南
+## 🔄 Status Atual
 
-欢迎提交问题报告和代码贡献。请确保遵循以下规范：
+### ✅ Funcional
 
-1. 代码风格符合PEP8规范
-2. 提交的PR包含适当的测试
-3. 更新相关文档
+- ✅ Interface GUI com WebSocket
+- ✅ 32 ferramentas MCP registradas
+- ✅ Processamento de áudio Opus
+- ✅ Interação com IA em tempo real
+- ✅ Suporte a câmera (captura de fotos)
+- ✅ Gerenciamento de calendário
+- ✅ Sistema de lembretes
 
-## 社区与支持
+### ⚠️ Conhecido
 
-### 感谢以下开源人员
->
-> 排名不分前后
+- ⚠️ Modelo de Wake Word ausente (Sherpa-ONNX)
+- ⚠️ API de Visão Remota retornando 404
+- ⚠️ Timeout de conexão WebSocket após ~1 minuto em teste
 
-[Xiaoxia](https://github.com/78)
-[zhh827](https://github.com/zhh827)
-[四博智联-李洪刚](https://github.com/SmartArduino)
-[HonestQiao](https://github.com/HonestQiao)
-[vonweller](https://github.com/vonweller)
-[孙卫公](https://space.bilibili.com/416954647)
-[isamu2025](https://github.com/isamu2025)
-[Rain120](https://github.com/Rain120)
-[kejily](https://github.com/kejily)
-[电波bilibili君](https://space.bilibili.com/119751)
-[赛搏智能](https://shop115087494.m.taobao.com/?refer=https%3A%2F%2Fm.tb.cn%2F&ut_sk=1.WMelxbgDQWkDAJ1Rq9Pn7DCD_21380790_1757337352472.Copy.shop&suid=0E25E948-651D-46E0-8E89-5C8CB03B4F56&shop_navi=shopindex&sourceType=shop&shareUniqueId=33038752403&un=d22c5ceda82844ab8bd7bab98ffeb263&share_crt_v=1&un_site=0&spm=a2159r.13376460.0.0&sp_tk=dkRKUjRKUWo2ZHY%3D&bc_fl_src=share-1041250486811064-2-1&cpp=1&shareurl=true&short_name=h.SaBKVHytsCKIPNS&bxsign=scdGtSe264e_qkFQBh0rXCkF-Mrb_s6t35EnpVBBU5dsrd-J24c-_rn_PhJiXRk0hg2hjGoAm0L7j2UQg27OIH_6gZkbhKDyLziD2cy4pDf8sC3KmqrF55TXP3USZaPTw_-&app=weixin)
+## 🛠️ Desenvolvimento
 
-### 赞助支持
+### Executar em Diferentes Modos
 
-<div align="center">
-  <h3>感谢所有赞助者的支持 ❤️</h3>
-  <p>无论是接口资源、设备兼容测试还是资金支持，每一份帮助都让项目更加完善</p>
-  
-  <a href="https://huangjunsen0406.github.io/py-xiaozhi/sponsors/" target="_blank">
-    <img src="https://img.shields.io/badge/查看-赞助者名单-brightgreen?style=for-the-badge&logo=github" alt="赞助者名单">
-  </a>
-  <a href="https://huangjunsen0406.github.io/py-xiaozhi/sponsors/" target="_blank">
-    <img src="https://img.shields.io/badge/成为-项目赞助者-orange?style=for-the-badge&logo=heart" alt="成为赞助者">
-  </a>
-</div>
+```bash
+# Modo GUI com WebSocket (padrão)
+python main.py --mode gui --protocol websocket
 
-## 项目统计
+# Modo CLI com MQTT
+python main.py --mode cli --protocol mqtt
 
-[![Star History Chart](https://api.star-history.com/svg?repos=huangjunsen0406/py-xiaozhi&type=Date)](https://www.star-history.com/#huangjunsen0406/py-xiaozhi&Date)
+# Pular processo de ativação (debug)
+python main.py --skip-activation
+```
 
-## 许可证
+### Adicionando Novas Ferramentas MCP
 
-[MIT License](LICENSE)
+Estenda a classe em `src/mcp/tools/` e registre em `mcp_server.py`.
+
+### Adicionando Novos Dispositivos IoT
+
+Implemente `Thing` base class em `src/iot/things/`.
+
+## 📊 Estatísticas do Projeto
+
+- **Ferramentas MCP**: 32+ funções integradas
+- **Compatibilidade**: 3 sistemas operacionais
+- **Protocolos**: 2 opções (WebSocket, MQTT)
+- **Modos**: 2 interfaces (GUI, CLI)
+
+## 🤝 Contribuições
+
+Contribuições são bem-vindas! Por favor:
+
+1. Faça um fork do repositório
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📝 Licença
+
+[MIT License](LICENSE) - Veja o arquivo LICENSE para detalhes
+
+## 🙏 Agradecimentos
+
+Agradecimentos especiais ao projeto original [py-xiaozhi](https://github.com/huangjunsen0406/py-xiaozhi) e todos os contribuidores.
+
+## 📧 Contato e Suporte
+
+Para dúvidas, sugestões ou relatórios de bugs, abra uma issue no repositório GitHub.
+
+---
+
+**Última atualização**: 13 de janeiro de 2026
+**Status**: ✅ Operacional em modo GUI + WebSocket
 >>>>>>> master
