@@ -29,6 +29,219 @@ Este é um fork personalizado do [py-xiaozhi](https://github.com/huangjunsen0406
 - **Despertar Inteligente**: Múltiplas palavras-chave de ativação (configuráveis)
 - **Modo de Conversa Contínua**: Experiência de conversa fluida e natural
 
+## 🧠 Modelos de IA e APIs
+
+### Configuração de Modelos LLM
+
+O ASSISTENTE-SHI suporta múltiplos modelos de linguagem com fallback automático:
+
+#### 1️⃣ **GLM-4V (Zhipu API) - PRINCIPAL (com restrições)**
+
+```
+📌 Status: Configurado mas com token inválido
+🔐 Modelo: GLM-4V-Plus (Zhipu / 智谱清言)
+🌐 API: https://api.tenclass.net/xiaozhi/vision/explain
+💰 Custo: ¥0.1 - 0.5 / 1K tokens (aproximadamente R$ 0.08 - R$ 0.40)
+⚙️ Requisitos: Token de autenticação válido
+```
+
+**Vantagens Técnicas da API Xiaozhi/GLM-4V:**
+- ✅ Visão computacional multi-modal integrada
+- ✅ Suporte a reconhecimento de caracteres chineses (OCR)
+- ✅ Análise de imagens em tempo real
+- ✅ Latência baixa (~500ms-1s)
+- ✅ Integração nativa com protocolo Xiaozhi
+- ✅ Custo relativamente baixo para visão computacional
+- ✅ Suporte a contexto visual expandido
+
+**Limitações Conhecidas:**
+- ❌ Token de autenticação inválido/expirado nesta instância
+- ❌ Retorna erro 404 em endpoints de visão
+- ❌ Requer renovação periódica de credenciais
+- ❌ Disponibilidade limitada a regiões específicas
+
+**Configuração (config/config.json):**
+```json
+{
+  "llm": {
+    "api": "zhipu",
+    "model": "glm-4v-plus",
+    "token": "d656b80e-4d21-46d6-a32e-74048bf28a47",
+    "base_url": "https://api.tenclass.net/xiaozhi/vision/explain"
+  }
+}
+```
+
+---
+
+#### 2️⃣ **LLaVA (Ollama Local) - FALLBACK RECOMENDADO ⭐**
+
+```
+📌 Status: Ativo e Funcional (Substituição do GLM-4V)
+🔐 Modelo: LLaVA 1.6 (7B/13B/34B - Configurável)
+🖥️ Execução: Local (sem internet necessária)
+💰 Custo: Gratuito (Open Source)
+⚙️ Requisitos: Ollama instalado + 4GB+ VRAM
+```
+
+**Vantagens Técnicas do LLaVA + Ollama:**
+- ✅ **100% Gratuito** - Sem custo recorrente
+- ✅ **Privacidade Total** - Execução completamente local
+- ✅ **Sem Dependência de Internet** - Funciona offline
+- ✅ **Sem Limite de Tokens** - Uso ilimitado
+- ✅ **Sem Rate Limiting** - Velocidade consistente
+- ✅ **Customizável** - Modelos ajustáveis (7B/13B/34B)
+- ✅ **Open Source** - Código aberto e auditável
+- ✅ **Visão Computacional** - Análise de imagens integrada
+- ✅ **Contexto Expandido** - Suporta hasta 4K+ tokens
+- ✅ **Sem Autenticação** - Funciona sem credenciais
+
+**Limitações do LLaVA:**
+- ⚠️ Requer hardware local (VRAM suficiente)
+- ⚠️ Latência maior que API remota (~2-5s para 7B)
+- ⚠️ Qualidade inferior ao GPT-4V (mas aceitável)
+- ⚠️ Requer instalação do Ollama
+- ⚠️ Modelos maiores (34B) precisam 24GB+ VRAM
+
+**Instalação do Ollama + LLaVA:**
+```bash
+# Instalar Ollama
+# Windows: https://ollama.com/download/windows
+# macOS: https://ollama.com/download/mac
+# Linux: curl -fsSL https://ollama.ai/install.sh | sh
+
+# Fazer pull do modelo LLaVA
+ollama pull llava:7b          # Rápido, 4GB
+# ou
+ollama pull llava:13b         # Mais preciso, 8GB
+# ou
+ollama pull llava:34b         # Mais poderoso, 24GB
+
+# Iniciar serviço Ollama (roda em localhost:11434)
+ollama serve
+```
+
+**Configuração (config/config.json):**
+```json
+{
+  "llm": {
+    "api": "ollama",
+    "model": "llava:7b",
+    "base_url": "http://localhost:11434/api",
+    "temperature": 0.7,
+    "context_window": 2048,
+    "timeout": 60
+  }
+}
+```
+
+---
+
+#### 3️⃣ **OpenAI GPT-4V - ALTERNATIVA PREMIUM**
+
+```
+📌 Status: Suportado via integração
+🔐 Modelo: GPT-4V (Vision)
+🌐 API: https://api.openai.com/v1
+💰 Custo: $0.01 - $0.03 / 1K tokens (~R$ 0.05 - R$ 0.15)
+⚙️ Requisitos: API Key OpenAI
+```
+
+**Vantagens:**
+- ✅ Qualidade superior de resposta
+- ✅ Visão computacional mais precisa
+- ✅ Melhor compreensão de contexto
+- ✅ Suporte multilíngue excelente
+
+**Desvantagens:**
+- ❌ Custo recorrente por uso
+- ❌ Requer conexão com internet
+- ❌ Limites de taxa (rate limiting)
+- ❌ Dados enviados para servidor remoto
+
+**Configuração:**
+```json
+{
+  "llm": {
+    "api": "openai",
+    "model": "gpt-4-vision-preview",
+    "api_key": "sk-...",
+    "base_url": "https://api.openai.com/v1"
+  }
+}
+```
+
+---
+
+### 📊 Comparação de Modelos
+
+| Aspecto | GLM-4V (Zhipu) | LLaVA (Ollama) | GPT-4V (OpenAI) |
+|---------|----------------|-----------------|-----------------|
+| **Custo** | ¥0.1-0.5/1K | 🆓 Gratuito | $0.01-0.03/1K |
+| **Latência** | ~500ms | ~2-5s | ~1-2s |
+| **Privacidade** | ❌ Servidor remoto | ✅ Local | ❌ Remoto |
+| **Internet** | ✅ Obrigatório | ❌ Offline | ✅ Obrigatório |
+| **Qualidade** | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **Customizável** | ❌ Não | ✅ Sim | ❌ Não |
+| **Rate Limit** | Sim | ❌ Não | Sim |
+| **Visão Comp.** | ✅ Sim | ✅ Sim | ✅ Sim |
+| **Autenticação** | ✅ Token | ❌ Não | ✅ API Key |
+
+---
+
+### 🔄 Estratégia de Fallback Automático
+
+```
+┌─────────────────────────────────────────────────┐
+│  Usuário faz pergunta com imagem                │
+└────────────────┬────────────────────────────────┘
+                 │
+                 v
+      ┌──────────────────────┐
+      │ Tentar GLM-4V/Zhipu  │
+      │ (Principal)          │
+      └──────────┬───────────┘
+                 │
+         ┌───────┴────────┐
+         │                │
+    ❌ Erro/Timeout       ✅ Sucesso
+         │                │
+         v                v
+    ┌──────────────────┐  │
+    │ Tentar LLaVA     │  │
+    │ Local (Fallback) │  │
+    └──────┬───────────┘  │
+           │              │
+       ┌───┴────┐         │
+       │        │         │
+   ❌ Erro  ✅ Sucesso   │
+       │        │         │
+       v        v         v
+   ┌─────────────────────────┐
+   │ Retornar resposta       │
+   │ (Melhor modelo disponível)
+   └─────────────────────────┘
+```
+
+---
+
+### 💡 Recomendação de Uso
+
+**Para Desenvolvimento/Testes:** 🏠 **LLaVA + Ollama Local**
+- Gratuito, sem limite de uso
+- Execução offline garantida
+- Ideal para prototipagem
+
+**Para Produção Crítica:** 🔐 **GPT-4V OpenAI**
+- Melhor qualidade garantida
+- Suporte profissional disponível
+- Ideal para aplicações comerciais
+
+**Para Uso Corporativo Chinês:** 🌍 **GLM-4V Zhipu**
+- Otimizado para caracterização chinesa
+- Menor custo em regiões chinesas
+- Integração nativa com Xiaozhi
+
 ### 🔧 Ecossistema de Ferramentas MCP (32+ Ferramentas)
 
 - **Controle de Sistema**: Monitoramento, gerenciamento de aplicativos, controle de volume
