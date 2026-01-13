@@ -242,6 +242,241 @@ ollama serve
 - Menor custo em regiões chinesas
 - Integração nativa com Xiaozhi
 
+---
+
+## 🔌 Endpoint MCP (Model Context Protocol)
+
+### Informações de Conexão do Agente
+
+```
+🔗 Protocolo: WebSocket Seguro (WSS)
+📊 Status: Não Conectado
+🎯 Endpoint: wss://api.xiaozhi.me/mcp/
+🔐 Autenticação: JWT Token
+```
+
+### URL Completa do Endpoint
+
+```
+wss://api.xiaozhi.me/mcp/?token=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjc2NjcwOSwiYWdlbnRJZCI6MTMzMzQ2NywiZW5kcG9pbnRJZCI6ImFnZW50XzEzMzM0NjciLCJwdXJwb3NlIjoibWNwLWVuZHBvaW50IiwiaWF0IjoxNzY4MjcxMDQ3LCJleHAiOjE3OTk4Mjg2NDd9.ceUsIEiALsqTY8L4lfYncUe26KKB92ITCmc_AYZWqUOZ9ChJZWv97UvYiQLAavsFTc7CB0n0xkpVZvqwoMnWfg
+```
+
+### Detalhes do Token JWT
+
+**Headers:**
+```json
+{
+  "alg": "ES256",
+  "typ": "JWT"
+}
+```
+
+**Payload (Decodificado):**
+```json
+{
+  "userId": 766709,
+  "agentId": 1333467,
+  "endpointId": "agent_1333467",
+  "purpose": "mcp-endpoint",
+  "iat": 1768271047,
+  "exp": 1799828647
+}
+```
+
+**Parâmetros:**
+- `userId`: 766709 (Identificador do usuário)
+- `agentId`: 1333467 (Identificador do agente)
+- `endpointId`: agent_1333467 (Identificador do endpoint)
+- `purpose`: mcp-endpoint (Propósito da autenticação)
+- `iat`: 1768271047 (Emitido em: 13 de janeiro de 2026)
+- `exp`: 1799828647 (Expira em: 13 de janeiro de 2027)
+
+### Conexão ao Endpoint
+
+**Via Python WebSocket:**
+```python
+import asyncio
+import websockets
+import json
+
+async def connect_to_mcp():
+    uri = "wss://api.xiaozhi.me/mcp/?token=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjc2NjcwOSwiYWdlbnRJZCI6MTMzMzQ2NywiZW5kcG9pbnRJZCI6ImFnZW50XzEzMzM0NjciLCJwdXJwb3NlIjoibWNwLWVuZHBvaW50IiwiaWF0IjoxNzY4MjcxMDQ3LCJleHAiOjE3OTk4Mjg2NDd9.ceUsIEiALsqTY8L4lfYncUe26KKB92ITCmc_AYZWqUOZ9ChJZWv97UvYiQLAavsFTc7CB0n0xkpVZvqwoMnWfg"
+    
+    try:
+        async with websockets.connect(uri) as websocket:
+            print("✅ Conectado ao endpoint MCP!")
+            
+            # Enviar inicialização
+            init_message = {
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "id": 1,
+                "params": {
+                    "protocolVersion": "2024-11-05",
+                    "clientInfo": {
+                        "name": "assistente-shi",
+                        "version": "1.0.0"
+                    }
+                }
+            }
+            
+            await websocket.send(json.dumps(init_message))
+            response = await websocket.recv()
+            print(f"Resposta: {response}")
+            
+    except Exception as e:
+        print(f"❌ Erro na conexão: {e}")
+
+# Executar
+asyncio.run(connect_to_mcp())
+```
+
+### Documentação do Endpoint
+
+Para documentação completa sobre o MCP Endpoint, consulte:
+- 📚 [Wiki de Documentação (Feishu)](https://my.feishu.cn/wiki/HiPEwZ37XiitnwktX13cEM5KnSb)
+
+### Operações Suportadas
+
+**1. Inicializar Conexão**
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "initialize",
+  "id": 1,
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "clientInfo": {
+      "name": "assistente-shi",
+      "version": "1.0.0"
+    }
+  }
+}
+```
+
+**2. Listar Ferramentas Disponíveis**
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/list",
+  "id": 2,
+  "params": {}
+}
+```
+
+**3. Executar uma Ferramenta**
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "id": 3,
+  "params": {
+    "name": "take_photo",
+    "arguments": {
+      "question": "Tire uma foto",
+      "context": "usuário solicitando captura de imagem"
+    }
+  }
+}
+```
+
+**4. Enviar Notificação**
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "notifications/initialized"
+}
+```
+
+### Ciclo de Vida da Conexão
+
+```
+┌─────────────────────────────────────────┐
+│ 1. Conectar ao WSS Endpoint             │
+└────────────────┬────────────────────────┘
+                 │
+                 v
+┌─────────────────────────────────────────┐
+│ 2. Enviar Initialize Request            │
+│    (método: initialize)                 │
+└────────────────┬────────────────────────┘
+                 │
+                 v
+┌─────────────────────────────────────────┐
+│ 3. Receber Initialize Response          │
+│    (Confirmação de conexão)             │
+└────────────────┬────────────────────────┘
+                 │
+                 v
+┌─────────────────────────────────────────┐
+│ 4. Enviar Initialized Notification      │
+│    (método: notifications/initialized)  │
+└────────────────┬────────────────────────┘
+                 │
+                 v
+┌─────────────────────────────────────────┐
+│ 5. Conexão Pronta                       │
+│    Pronto para enviar requisições       │
+└────────────────┬────────────────────────┘
+                 │
+        ┌────────┴────────┐
+        │                 │
+        v                 v
+   ┌─────────┐      ┌─────────┐
+   │ Enviar  │      │Manter   │
+   │Tools/   │      │Keep-    │
+   │Call     │      │Alive    │
+   └────┬────┘      └────┬────┘
+        │                │
+        └────────┬───────┘
+                 │
+                 v
+         ┌────────────────┐
+         │ Desconectar    │
+         │ (fim da sessão)│
+         └────────────────┘
+```
+
+### Tratamento de Erros
+
+**Erro 401 - Não Autorizado (Token Inválido/Expirado)**
+```json
+{
+  "error": {
+    "code": -32603,
+    "message": "Invalid or expired token"
+  }
+}
+```
+
+**Erro 500 - Servidor Indisponível**
+```json
+{
+  "error": {
+    "code": -32000,
+    "message": "Internal server error"
+  }
+}
+```
+
+**Reconexão Automática:**
+- O cliente deve implementar lógica de retry com backoff exponencial
+- Máximo de 5 tentativas de reconexão
+- Intervalo inicial: 1 segundo, máximo: 60 segundos
+
+### Monitoramento da Conexão
+
+```bash
+# Verificar status do endpoint
+curl -I https://api.xiaozhi.me/mcp/
+
+# Testar com wscat (WebSocket CLI)
+npm install -g wscat
+wscat -c "wss://api.xiaozhi.me/mcp/?token=..."
+```
+
+---
+
 ### 🔧 Ecossistema de Ferramentas MCP (32+ Ferramentas)
 
 - **Controle de Sistema**: Monitoramento, gerenciamento de aplicativos, controle de volume
