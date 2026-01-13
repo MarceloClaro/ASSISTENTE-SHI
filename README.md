@@ -678,12 +678,25 @@ Ba Zi               5/dia              ¥0.10 cada
 ### 🖥️ Como adicionar um dispositivo no Console Xiaozhi ("Add Device")
 
 Passo a passo rápido (modal de 6 dígitos):
+
 1. Abra o console: https://xiaozhi.me/console/agents/1333467/config (faça login).
 2. Clique em **Add Device**: o modal pedirá um **Verification Code** (6 dígitos).
 3. No dispositivo que quer parear, peça para ele anunciar/mostrar o código e digite no campo.
 4. Clique em **Confirm**. Se aparecer erro, gere um novo código ou verifique conexão/rede.
 
+Visual rápido do modal (esquemático):
+
+```text
+┌──────────────────────────────┐
+│ Add Device                   │
+│ Verification Code [ _ _ _ _ _ _ ]
+│                              │
+│ [Cancel]        [Confirm]    │
+└──────────────────────────────┘
+```
+
 Erros comuns e solução:
+
 - **Código expirado**: gere/peça um código novo.
 - **Campos em branco ou espaços**: remova espaços extras; só 6 dígitos numéricos.
 - **Rede instável**: reconecte à internet e tente novamente.
