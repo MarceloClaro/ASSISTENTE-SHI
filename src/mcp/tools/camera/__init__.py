@@ -72,13 +72,7 @@ def take_photo(arguments: dict) -> str:
     success = camera.capture()
     if not success:
         logger.error("Failed to capture photo")
-        return json.dumps({
-            "content": [{
-                "type": "text",
-                "text": "Falha ao capturar foto da câmera"
-            }],
-            "isError": True
-        })
+        return "Falha ao capturar foto da câmera"
 
     # Analisar com Ollama local
     logger.info("Photo captured, starting analysis...")
@@ -122,38 +116,17 @@ def take_photo(arguments: dict) -> str:
             import time
             time.sleep(2.0)  # 2 segundos para LLM processar
             
-            # Retornar com contexto injetado
-            return json.dumps({
-                "content": [{
-                    "type": "text",
-                    "text": enhanced_context
-                }],
-                "isError": False
-            })
+            # Retornar APENAS O TEXTO (MCP server faz serialização)
+            return enhanced_context
         else:
             error_msg = result_dict.get(
                 "message", "Erro desconhecido"
             )
             logger.error(f"❌ Análise falhou: {error_msg}")
-            return json.dumps({
-                "content": [{
-                    "type": "text",
-                    "text": f"Erro ao analisar imagem: {error_msg}"
-                }],
-                "isError": True
-            })
+            return f"Erro ao analisar imagem: {error_msg}"
     except json.JSONDecodeError as e:
         logger.error(f"❌ Erro ao parsear resposta: {e}")
-        return json.dumps({
-            "content": [{
-                "type": "text",
-                "text": (
-                    "Erro ao processar resposta da análise "
-                    "de imagem"
-                )
-            }],
-            "isError": True
-        })
+        return "Erro ao processar resposta da análise de imagem"
 
 
 def _enhance_user_context(

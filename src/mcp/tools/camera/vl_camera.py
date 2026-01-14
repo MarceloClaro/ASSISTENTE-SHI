@@ -163,11 +163,20 @@ class VLCamera(BaseCamera):
             return self._analyze_with_ollama(img_b64, full_prompt)
 
         except Exception as e:
-            error_msg = f"Ollama falhou ao analisar imagem: {str(e)}"
+            error_msg = f"Erro ao analisar imagem: {str(e)}"
             logger.error(error_msg)
             
+            # Mensagem amigável para timeout
+            if "timeout" in str(e).lower() or "50" in str(e):
+                suggestion = (
+                    "Análise demorou muito (>50s). "
+                    "Tente: 'ollama pull minicpm-v' para modelo mais rápido"
+                )
+            else:
+                suggestion = "Verifique se Ollama está rodando: ollama serve"
+            
             msg = f'{{"success": false, "message": "{error_msg}", '\
-                  f'"suggestion": "Verifique se Ollama está rodando: ollama serve"}}'
+                  f'"suggestion": "{suggestion}"}}'
             return msg
 
     def _analyze_with_openai(self, image_b64: str,
@@ -321,11 +330,12 @@ class VLCamera(BaseCamera):
                 }
             }
             
-            # Fazer requisição
+            # Fazer requisição com timeout de 50s (Xiaozhi tem limite de 60s)
+            # Se Ollama demorar >50s, melhor retornar erro amigável
             response = httpx.post(
                 url,
                 json=payload,
-                timeout=300.0
+                timeout=50.0  # 50 segundos máximo
             )
             
             if response.status_code == 200:
@@ -354,6 +364,14 @@ class VLCamera(BaseCamera):
                 msg = f'{{"success": false, "message": "{error_msg}"}}'
                 return msg
         
+        except httpx.TimeoutException:
+            error_msg = (
+                "Análise demorou mais de 50 segundos. "
+                "Ollama pode estar sobrecarregado ou modelo muito grande."
+            )
+            logger.error(error_msg)
+            msg = f'{{"success": false, "message": "{error_msg}"}}'
+            return msg
         except Exception as e:
             error_msg = f"Ollama failed: {str(e)}"
             logger.error(error_msg)
