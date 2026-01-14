@@ -1,6 +1,10 @@
 # ASSISTENTE-SHI - Xiaozhi AI Assistant 🤖
 
 <p align="center">
+  <img src="assets/emojis/winking.gif" alt="Assistente Shi Piscando" width="80" height="80"/>
+</p>
+
+<p align="center">
   <a href="https://github.com/MarceloClaro/ASSISTENTE-SHI/releases/latest">
     <img src="https://img.shields.io/github/v/release/MarceloClaro/ASSISTENTE-SHI?style=flat-square&logo=github&color=blue" alt="Release"/>
   </a>
