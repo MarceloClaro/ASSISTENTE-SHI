@@ -174,15 +174,7 @@ class MusicPlayer:
             raise_on_status=False,
         )
 
-    def _http_get_with_retry(self, url: str, timeout: int = 10, **kwargs):
-        """GET com retry/backoff usando requests Session."""
-        session = requests.Session()
-        adapter = HTTPAdapter(max_retries=self._http_retry)
-        session.mount("http://", adapter)
-        session.mount("https://", adapter)
-        return session.get(url, timeout=timeout, **kwargs)
-
-        #
+        # Limpar cache temporário
         self._clean_temp_cache()
 
         # Aplicação e AudioCodec
@@ -195,8 +187,16 @@ class MusicPlayer:
         self._last_scan_time = 0
 
         logger.info(
-            "MúsicaReproduçãoDispositivoInicialização concluída (FFmpeg + AudioCodec Modo)"
+            "[MusicPlayer] MúsicaReproduçãoDispositivo"
         )
+
+    def _http_get_with_retry(self, url: str, timeout: int = 10, **kwargs):
+        """GET com retry/backoff usando requests Session."""
+        session = requests.Session()
+        adapter = HTTPAdapter(max_retries=self._http_retry)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        return session.get(url, timeout=timeout, **kwargs)
 
     def _initialize_app_reference(self):
         """
