@@ -9,14 +9,26 @@ from .normal_camera import NormalCamera
 from .vl_camera import VLCamera
 
 # 🚀 OTIMIZAÇÃO: SmolVLM2 + OpenVINO (6-9x mais rápido)
-try:
-    from .smolvlm2_optimized import SmolVLM2Optimized
-    SMOLVLM2_AVAILABLE = True
-except (ImportError, ModuleNotFoundError):
-    SMOLVLM2_AVAILABLE = False
-    SmolVLM2Optimized = None
+# LAZY IMPORT: Importar apenas quando necessário para evitar conflito torch
+SMOLVLM2_AVAILABLE = None
+SmolVLM2Optimized = None
 
 logger = get_logger(__name__)
+
+
+def _check_smolvlm2_available():
+    """Verificar disponibilidade do SmolVLM2 (lazy load)"""
+    global SMOLVLM2_AVAILABLE, SmolVLM2Optimized
+    if SMOLVLM2_AVAILABLE is None:
+        try:
+            from .smolvlm2_optimized import SmolVLM2Optimized as SVL2
+            SmolVLM2Optimized = SVL2
+            SMOLVLM2_AVAILABLE = True
+            logger.info("✅ SmolVLM2 disponível (lazy loaded)")
+        except Exception as e:
+            SMOLVLM2_AVAILABLE = False
+            logger.debug(f"SmolVLM2 não disponível: {e}")
+    return SMOLVLM2_AVAILABLE
 
 
 def get_camera_instance():
@@ -80,6 +92,7 @@ def take_photo(arguments: dict) -> str:
     )
 
     # ✨ TENTAR USAR SmolVLM2 PRIMEIRO (6-9x mais rápido)
+    _check_smolvlm2_available()  # Lazy load
     if SMOLVLM2_AVAILABLE:
         try:
             logger.info("🚀 Usando SmolVLM2 + OpenVINO (6-9x mais rápido)...")
