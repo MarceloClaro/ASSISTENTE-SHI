@@ -193,13 +193,15 @@ class McpTool:
                 text = str(result)
 
             return json.dumps(
-                {"content": [{"type": "text", "text": text}], "isError": False}
+                {"content": [{"type": "text", "text": text}], "isError": False},
+                ensure_ascii=False
             )
 
         except Exception as e:
             logger.error(f"Error calling tool {self.name}: {e}", exc_info=True)
             return json.dumps(
-                {"content": [{"type": "text", "text": str(e)}], "isError": True}
+                {"content": [{"type": "text", "text": str(e)}], "isError": True},
+                ensure_ascii=False
             )
 
 
