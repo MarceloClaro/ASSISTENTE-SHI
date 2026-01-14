@@ -300,13 +300,16 @@ class VLCamera(BaseCamera):
                     )
                     models_available = result.stdout.lower()
                     
-                    # Prioridade: minicpm-v > llava:7b > llava
-                    if "minicpm-v" in models_available:
-                        model = "minicpm-v"
-                        logger.info("Usando modelo rápido: minicpm-v")
-                    elif "llava:7b" in models_available:
+                    # Prioridade: llava:7b > minicpm-v > llava
+                    # (llava:7b é MUITO mais rápido!)
+                    if "llava:7b" in models_available:
                         model = "llava:7b"
-                        logger.info("Usando modelo rápido: llava:7b")
+                        logger.info("✅ Modelo RÁPIDO: llava:7b (~20s)")
+                    elif "minicpm-v" in models_available:
+                        model = "minicpm-v"
+                        logger.warning(
+                            "⚠️ minicpm-v LENTO ~55s - use llava:7b"
+                        )
                     else:
                         model = "llava"
                         logger.info(
