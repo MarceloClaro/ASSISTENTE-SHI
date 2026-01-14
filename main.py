@@ -1,12 +1,97 @@
 import argparse
 import asyncio
 import signal
+import subprocess
 import sys
 
 from src.application import Application
 from src.utils.logging_config import get_logger, setup_logging
 
 logger = get_logger(__name__)
+
+
+def check_ollama_setup():
+    """
+    Verifica se o Ollama está instalado e rodando.
+    Se não estiver, oferece instalação automática.
+    """
+    try:
+        # Verifica se ollama está instalado
+        result = subprocess.run(
+            ["ollama", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        
+        if result.returncode != 0:
+            raise FileNotFoundError("Ollama não encontrado")
+        
+        # Verifica se o serviço está rodando
+        try:
+            import requests
+            response = requests.get("http://localhost:11434/api/tags", timeout=2)
+            if response.status_code != 200:
+                raise ConnectionError("Serviço Ollama não está respondendo")
+        except:
+            logger.warning("⚠️  Serviço Ollama não está rodando")
+            logger.info("Iniciando serviço Ollama...")
+            
+            # Tenta iniciar o serviço
+            try:
+                subprocess.Popen(
+                    ["ollama", "serve"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                import time
+                time.sleep(3)  # Aguarda inicialização
+                logger.info("✅ Serviço Ollama iniciado")
+            except Exception as e:
+                logger.error(f"Erro ao iniciar serviço: {e}")
+        
+        # Verifica se o modelo LLaVA está disponível
+        result = subprocess.run(
+            ["ollama", "list"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        
+        if "llava" not in result.stdout.lower():
+            logger.warning("⚠️  Modelo LLaVA não encontrado")
+            logger.info("Para análise de imagens, execute: python setup_ollama.py")
+        else:
+            logger.info("✅ Ollama e LLaVA configurados corretamente")
+        
+        return True
+        
+    except FileNotFoundError:
+        logger.error("\n" + "="*60)
+        logger.error("❌ OLLAMA NÃO INSTALADO")
+        logger.error("="*60)
+        logger.error("\nO Ollama é necessário para análise de imagens (100% gratuito).")
+        logger.error("\nOpções:")
+        logger.error("  1. Instalação automática: python setup_ollama.py")
+        logger.error("  2. Instalação manual: https://ollama.ai/download")
+        logger.error("\n" + "="*60 + "\n")
+        
+        # Pergunta se quer instalar automaticamente
+        try:
+            response = input("Deseja instalar o Ollama automaticamente agora? (s/N): ")
+            if response.lower() in ['s', 'sim', 'y', 'yes']:
+                logger.info("Executando instalação automática...")
+                subprocess.run([sys.executable, "setup_ollama.py"], check=True)
+                return True
+            else:
+                logger.warning("Sistema iniciará sem suporte a análise de imagens")
+                return False
+        except (KeyboardInterrupt, EOFError):
+            logger.warning("\nInstalação cancelada. Sistema iniciará sem análise de imagens.")
+            return False
+    except Exception as e:
+        logger.error(f"Erro ao verificar Ollama: {e}")
+        return False
 
 
 def parse_args():
@@ -64,6 +149,10 @@ async def start_app(mode: str, protocol: str, skip_activation: bool) -> int:
     Ponto de entrada unificado para iniciar a aplicação (executado no loop de eventos existente).
     """
     logger.info("Iniciando Cliente AI Xiaozhi")
+    
+    # Verifica instalação do Ollama antes de iniciar
+    logger.info("\n🔍 Verificando dependências do sistema...")
+    check_ollama_setup()
 
     # Processar fluxo de ativação
     if not skip_activation:

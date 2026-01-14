@@ -793,23 +793,127 @@ Erros comuns e solução:
 
 ### Instalação
 
+#### 🚀 Instalação Rápida (Recomendada)
+
+Use os scripts automatizados que verificam e instalam todas as dependências, incluindo o Ollama:
+
+**Windows:**
 ```bash
-# Clonar repositório
+# Inicia aplicação com verificação automática
+start.bat
+```
+
+**Linux/macOS:**
+```bash
+# Tornar executável e rodar
+chmod +x start.sh
+./start.sh
+```
+
+Os scripts verificam automaticamente:
+- ✅ Ambiente virtual Python
+- ✅ Dependências instaladas
+- ✅ **Ollama instalado e rodando**
+- ✅ **Modelo LLaVA disponível**
+
+Se algo estiver faltando, os scripts oferecem instalação automática!
+
+---
+
+#### 🔧 Instalação Manual Completa
+
+Se preferir controle total do processo:
+
+**1. Clonar Repositório**
+```bash
 git clone https://github.com/MarceloClaro/ASSISTENTE-SHI.git
 cd ASSISTENTE-SHI
+```
 
+**2. Ambiente Virtual Python**
+```bash
 # Criar ambiente virtual
 python -m venv venv
-source venv/bin/activate  # No Windows: venv\Scripts\activate
 
-# Instalar dependências
+# Ativar (Windows)
+venv\Scripts\activate
+
+# Ativar (Linux/macOS)
+source venv/bin/activate
+```
+
+**3. Instalar Dependências Python**
+```bash
 pip install -r requirements.txt
+```
 
-# Executar aplicação (GUI)
+**4. Instalar Ollama (Para Análise de Imagens)**
+
+**Opção A - Instalação Automática:**
+```bash
+python setup_ollama.py
+```
+Este script:
+- Detecta seu sistema operacional
+- Baixa e instala o Ollama
+- Inicia o serviço automaticamente
+- Faz download do modelo LLaVA (7B)
+
+**Opção B - Instalação Manual:**
+
+- **Windows**: Baixe de [ollama.ai/download](https://ollama.ai/download)
+- **macOS**: `brew install ollama` ou instalador DMG
+- **Linux**: `curl -fsSL https://ollama.ai/install.sh | sh`
+
+Depois instale o modelo:
+```bash
+ollama serve  # Inicia serviço
+ollama pull llava:7b  # Baixa modelo (4.5GB)
+```
+
+**5. Executar Aplicação**
+```bash
+# Interface Gráfica (GUI)
 python main.py --mode gui --protocol websocket
 
-# Ou modo CLI
+# Linha de Comando (CLI)
 python main.py --mode cli
+```
+
+---
+
+#### 📦 Instalação Apenas de Dependências (Sem Ollama)
+
+Se não precisar de análise de imagens:
+
+```bash
+git clone https://github.com/MarceloClaro/ASSISTENTE-SHI.git
+cd ASSISTENTE-SHI
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python main.py --mode gui
+```
+
+> **Nota:** Sem o Ollama, as funções de visão computacional ficarão desabilitadas.
+
+---
+
+#### 🔍 Verificar Instalação
+
+Após instalar, verifique se tudo está funcionando:
+
+```bash
+# Verificar Python e dependências
+python --version
+pip list | grep -E "PyQt5|qasync|requests"
+
+# Verificar Ollama
+ollama --version
+ollama list  # Deve mostrar llava:7b
+
+# Teste rápido do sistema
+python diagnose_system.py
 ```
 
 ## 📖 Documentação e Guias
