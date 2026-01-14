@@ -79,11 +79,14 @@ class AudioPlugin(Plugin):
             if message.get("type") == "tts":
                 state = message.get("state")
                 if state == "start":
-                    # TTS Começar：LimpandoÁudioFila，PausadoMúsica
+                    # TTS Começar：PausadoMúsica (não limpa fila - áudio TTS vem depois)
                     await self._pause_music_for_tts()
                 elif state == "stop":
-                    # TTS Final: Restaurando Reprodução de Música
+                    # TTS Final: Limpa fila SOMENTE após reprodução completa
+                    # Restaurando Reprodução de Música
                     await self._resume_music_after_tts()
+                    # Limpa apenas após TTS terminar completamente
+                    await asyncio.sleep(0.1)  # Aguarda última reprodução
                     await self.codec.clear_audio_queue()
         except Exception as e:
             logger.error(f"Falha ao processar evento TTS: {e}", exc_info=True)
@@ -102,13 +105,12 @@ class AudioPlugin(Plugin):
 
     async def _pause_music_for_tts(self):
         """
-        TTS Iniciando：LimpandoáudioFila，PausadoMúsica.
+        TTS Iniciando：PausadoMúsica (NÃO limpa fila - precisa receber áudio TTS).
         """
         try:
-            if self.codec:
-                await self.codec.clear_audio_queue()
-                logger.debug("TTS Começar，JáLimpandoÁudioFila")
-
+            # ❌ NÃO limpar fila aqui - o áudio TTS virá logo após
+            # A fila precisa estar pronta para receber os dados de áudio TTS
+            
             try:
                 from src.mcp.tools.music.music_player import get_music_player_instance
 
