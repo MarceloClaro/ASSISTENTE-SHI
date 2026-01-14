@@ -414,7 +414,195 @@ Rectangle {
                         verticalAlignment: Text.AlignVCenter
                         elide: Text.ElideNone
                     }
-                    onClicked: root.settingsButtonClicked()
+                    onClicked: settingsDialog.visible = true
+                }
+            }
+        }
+    }
+    
+    // Diálogo de Configurações
+    Rectangle {
+        id: settingsDialog
+        visible: false
+        anchors.fill: parent
+        color: "#000000aa"
+        z: 1000
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: settingsDialog.visible = false
+        }
+
+        Rectangle {
+            id: settingsPanel
+            width: 500
+            height: 400
+            anchors.centerIn: parent
+            color: "#ffffff"
+            radius: 12
+            border.width: 1
+            border.color: "#e5e6eb"
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 20
+                spacing: 16
+
+                // Título
+                Text {
+                    text: "⚙️ Configurações"
+                    font.family: "Segoe UI"
+                    font.pixelSize: 18
+                    font.weight: Font.Bold
+                    color: "#1d2129"
+                }
+
+                // Separador
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 1
+                    color: "#f0f1f4"
+                }
+
+                // Seção: Caminho de Música Local
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    Text {
+                        text: "🎵 Caminho de Música Local"
+                        font.family: "Segoe UI"
+                        font.pixelSize: 14
+                        font.weight: Font.Medium
+                        color: "#4e5969"
+                    }
+
+                    Text {
+                        text: "Pasta onde os arquivos MP3 são armazenados"
+                        font.family: "Segoe UI"
+                        font.pixelSize: 12
+                        color: "#86909c"
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 40
+                        color: "#f5f6f7"
+                        radius: 6
+                        border.width: 1
+                        border.color: "#e5e6eb"
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 8
+                            spacing: 8
+
+                            TextField {
+                                id: musicPathInput
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                placeholderText: "Insira o caminho da pasta..."
+                                text: displayModel ? displayModel.musicPath : ""
+                                background: Rectangle { color: "transparent" }
+                                font.family: "Segoe UI"
+                                font.pixelSize: 12
+                                
+                                onTextChanged: {
+                                    if (displayModel) {
+                                        displayModel.musicPath = text
+                                    }
+                                }
+                            }
+
+                            Button {
+                                Layout.preferredWidth: 90
+                                Layout.preferredHeight: 32
+                                text: "Procurar"
+                                background: Rectangle {
+                                    color: browseBtn.hovered ? "#f2f3f5" : "#eceff3"
+                                    radius: 6
+                                }
+                                contentItem: Text {
+                                    text: "Procurar"
+                                    font.family: "Segoe UI"
+                                    font.pixelSize: 11
+                                    color: "#1d2129"
+                                    horizontalAlignment: Text.AlignHCenter
+                                }
+                                id: browseBtn
+                                onClicked: {
+                                    root.settingsButtonClicked()
+                                }
+                            }
+                        }
+                    }
+
+                    Text {
+                        text: "Padrão: C:\\Users\\marce\\AppData\\Local\\py-xiaozhi-main\\cache\\music\\local"
+                        font.family: "Segoe UI"
+                        font.pixelSize: 11
+                        color: "#a8abb2"
+                    }
+                }
+
+                // Spacer
+                Item { Layout.fillHeight: true }
+
+                // Separador
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 1
+                    color: "#f0f1f4"
+                }
+
+                // Botões de ação
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    Button {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 36
+                        text: "Cancelar"
+                        background: Rectangle {
+                            color: cancelBtn.pressed ? "#e5e6eb" : (cancelBtn.hovered ? "#f2f3f5" : "#eceff3")
+                            radius: 6
+                        }
+                        contentItem: Text {
+                            text: "Cancelar"
+                            font.family: "Segoe UI"
+                            font.pixelSize: 12
+                            color: "#1d2129"
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                        id: cancelBtn
+                        onClicked: settingsDialog.visible = false
+                    }
+
+                    Button {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 36
+                        text: "Salvar"
+                        background: Rectangle {
+                            color: saveBtn.pressed ? "#0e42d2" : (saveBtn.hovered ? "#4080ff" : "#165dff")
+                            radius: 6
+                        }
+                        contentItem: Text {
+                            text: "Salvar"
+                            font.family: "Segoe UI"
+                            font.pixelSize: 12
+                            color: "white"
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                        id: saveBtn
+                        onClicked: {
+                            if (displayModel) {
+                                displayModel.saveMusicPathConfig()
+                            }
+                            settingsDialog.visible = false
+                        }
+                    }
                 }
             }
         }

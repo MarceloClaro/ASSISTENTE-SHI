@@ -7,6 +7,8 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 from src.audio_codecs.music_decoder import MusicDecoder
 from src.constants.constants import AudioConfig
@@ -137,12 +139,17 @@ class MusicPlayer:
         user_cache_dir = get_user_cache_dir()
         self.cache_dir = user_cache_dir / "music"
         self.temp_cache_dir = self.cache_dir / "temp"
+        self._custom_music_path = None  # Path configurado via GUI
         self._init_cache_dirs()
 
         # API
         self.config = {
             "SEARCH_URL": "http://search.kuwo.cn/r.s",
-            "PLAY_URL": "http://api.xiaodaokg.com/kuwo.php",
+            # Prefer HTTPS; fallback to HTTP if blocked.
+            "PLAY_URLS": [
+                "https://api.xiaodaokg.com/kuwo.php",
+                "http://api.xiaodaokg.com/kuwo.php",
+            ],
             "LYRIC_URL": "https://api.xiaodaokg.com/kw/kwlyric.php",
             "HEADERS": {
                 "User-Agent": (
@@ -151,7 +158,29 @@ class MusicPlayer:
                 "Accept": "*/*",
                 "Connection": "keep-alive",
             },
+            "HTTP_RETRIES": 2,
+            "HTTP_BACKOFF": 1.5,
         }
+
+        # Requisições com retry/backoff configurável
+        self._http_retry = Retry(
+            total=self.config["HTTP_RETRIES"],
+            connect=self.config["HTTP_RETRIES"],
+            read=self.config["HTTP_RETRIES"],
+            status=self.config["HTTP_RETRIES"],
+            backoff_factor=self.config["HTTP_BACKOFF"],
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["GET"],
+            raise_on_status=False,
+        )
+
+    def _http_get_with_retry(self, url: str, timeout: int = 10, **kwargs):
+        """GET com retry/backoff usando requests Session."""
+        session = requests.Session()
+        adapter = HTTPAdapter(max_retries=self._http_retry)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        return session.get(url, timeout=timeout, **kwargs)
 
         #
         self._clean_temp_cache()
@@ -222,6 +251,38 @@ class MusicPlayer:
         except Exception as e:
             logger.error(f"DiretórioFalha: {e}")
 
+    def set_custom_music_path(self, custom_path: str) -> bool:
+        """
+        Define caminho customizado para música local.
+        Retorna True se o caminho é válido, False caso contrário.
+        """
+        try:
+            path = Path(custom_path)
+            if not path.exists():
+                logger.warning(f"Caminho customizado não existe: {custom_path}")
+                return False
+            if not path.is_dir():
+                logger.warning(f"Caminho não é diretório: {custom_path}")
+                return False
+            self._custom_music_path = path
+            # Força refresh da playlist para usar novo caminho
+            self._local_playlist = None
+            self._last_scan_time = 0
+            logger.info(f"Caminho de música customizado: {custom_path}")
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao definir caminho customizado: {e}")
+            return False
+
+    def get_music_search_path(self) -> Path:
+        """
+        Retorna o caminho que deve ser usado para buscar músicas locais.
+        Prioriza caminho customizado, senão usa cache padrão.
+        """
+        if self._custom_music_path and self._custom_music_path.exists():
+            return self._custom_music_path
+        return self.cache_dir
+
     def _scan_local_music(self, force_refresh: bool = False) -> List[MusicMetadata]:
         """
         Música，Retorno.
@@ -238,14 +299,17 @@ class MusicPlayer:
 
         playlist = []
 
-        if not self.cache_dir.exists():
-            logger.warning(f"DiretórioNãoExiste: {self.cache_dir}")
+        # Usa caminho customizado se disponível, senão usa cache padrão
+        search_path = self.get_music_search_path()
+
+        if not search_path.exists():
+            logger.warning(f"DiretórioNãoExiste: {search_path}")
             return playlist
 
         # PesquisarMúsicaArquivo
         music_files = []
         for pattern in ["*.mp3", "*.m4a", "*.flac", "*.wav", "*.ogg"]:
-            music_files.extend(self.cache_dir.glob(pattern))
+            music_files.extend(search_path.glob(pattern))
 
         logger.debug(f"Encontrado {len(music_files)} MúsicaArquivo")
 
@@ -474,32 +538,83 @@ class MusicPlayer:
     #
     async def search_and_play(self, song_name: str) -> dict:
         """
-        Pesquisa  Reprodução.
+        Pesquisa e Reprodução com fallback automático para música local.
         """
         try:
-            # Pesquisa
+            # Primeiro: tentar buscar música local
+            local_result = await self.search_local_music(song_name)
+            if local_result.get("status") == "success" and local_result.get("results"):
+                logger.info(f"Encontrada música local para '{song_name}', usando modo offline")
+                first_match = local_result["results"][0]
+                local_path = first_match.get("path")
+                
+                if local_path and Path(local_path).exists():
+                    # Tocar do cache local
+                    self.current_song = first_match.get("display_name", song_name)
+                    self.song_id = first_match.get("file_id", "")
+                    success = await self._start_playback(Path(local_path))
+                    
+                    if success:
+                        return {
+                            "status": "success",
+                            "message": f"Reproduzindo (local): {self.current_song}",
+                            "song": self.current_song,
+                            "source": "local",
+                        }
+            
+            # Segundo: tentar stream online
+            logger.info(f"Tentando buscar '{song_name}' via stream online...")
             song_id, url = await self._search_song(song_name)
+            
             if not song_id or not url:
-                return {"status": "error", "message": f"NãoEncontrado: {song_name}"}
+                # Fallback final: sugerir música local
+                local_playlist = await self.get_local_playlist()
+                if local_playlist.get("total_count", 0) > 0:
+                    return {
+                        "status": "error",
+                        "message": f"Não encontrado online: {song_name}. Músicas locais disponíveis: {local_playlist['total_count']}",
+                        "local_available": local_playlist["playlist"][:5],
+                    }
+                return {"status": "error", "message": f"Não encontrado: {song_name}"}
 
-            # Reprodução
+            # Reproduzir stream
             success = await self._play_url(url)
             if success:
-                # RetornoInformação（AguardarInformação）
                 duration_str = self._format_time(self.total_duration)
                 return {
                     "status": "success",
-                    "message": f"EmReprodução: {self.current_song}",
+                    "message": f"Reproduzindo (stream): {self.current_song}",
                     "song": self.current_song,
                     "duration": duration_str,
                     "total_seconds": self.total_duration,
+                    "source": "stream",
                 }
             else:
-                return {"status": "error", "message": "ReproduçãoFalha"}
+                return {"status": "error", "message": "Falha ao reproduzir"}
 
         except Exception as e:
-            logger.error(f"PesquisaReproduçãoFalha: {e}")
-            return {"status": "error", "message": f"OperaçãoFalha: {str(e)}"}
+            logger.error(f"Falha em search_and_play: {e}")
+            # Último fallback: tentar local novamente
+            try:
+                local_result = await self.search_local_music(song_name)
+                if local_result.get("status") == "success" and local_result.get("results"):
+                    logger.warning(f"Stream falhou, usando música local como fallback")
+                    first_match = local_result["results"][0]
+                    local_path = first_match.get("path")
+                    if local_path and Path(local_path).exists():
+                        self.current_song = first_match.get("display_name", song_name)
+                        success = await self._start_playback(Path(local_path))
+                        if success:
+                            return {
+                                "status": "success",
+                                "message": f"Reproduzindo (local fallback): {self.current_song}",
+                                "song": self.current_song,
+                                "source": "local_fallback",
+                            }
+            except:
+                pass
+            
+            return {"status": "error", "message": f"Operação falhou: {str(e)}"}
 
     async def stop(self) -> dict:
         """
@@ -884,7 +999,7 @@ class MusicPlayer:
 
             # Pesquisa com timeout configurável
             response = await asyncio.to_thread(
-                requests.get,
+                self._http_get_with_retry,
                 self.config["SEARCH_URL"],
                 params=params,
                 headers=self.config["HEADERS"],
@@ -932,21 +1047,27 @@ class MusicPlayer:
             self.current_song = display_name
             self.song_id = song_id
 
-            # Obter URL de reprodução com retry
-            play_url = f"{self.config['PLAY_URL']}?ID={song_id}"
-            url_response = await asyncio.to_thread(
-                requests.get,
-                play_url,
-                headers=self.config["HEADERS"],
-                timeout=timeout
-            )
-            url_response.raise_for_status()
+            # Obter URL de reprodução com retry e fallback de host
+            for play_base in self.config["PLAY_URLS"]:
+                play_url = f"{play_base}?ID={song_id}"
+                try:
+                    url_response = await asyncio.to_thread(
+                        self._http_get_with_retry,
+                        play_url,
+                        headers=self.config["HEADERS"],
+                        timeout=timeout,
+                    )
+                    url_response.raise_for_status()
 
-            play_url_text = url_response.text.strip()
-            if play_url_text and play_url_text.startswith("http"):
-                #
-                await self._fetch_lyrics(song_id)
-                return song_id, play_url_text
+                    play_url_text = url_response.text.strip()
+                    if play_url_text and play_url_text.startswith("http"):
+                        await self._fetch_lyrics(song_id)
+                        return song_id, play_url_text
+
+                except Exception as inner_e:
+                    logger.warning(
+                        f"PlayURLFalha host={play_base} id={song_id}: {inner_e}"
+                    )
 
             return song_id, ""
 

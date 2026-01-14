@@ -79,8 +79,8 @@
     "output_device_id": 12,
     "output_device_name": "Driver de som primário",
     "input_sample_rate": 48000,
-    "output_sample_rate": 44100,
     "input_channels": 2,
+    "output_sample_rate": 44100,
     "output_channels": 2
   },
   "CAMERA_OPTIONS": {
