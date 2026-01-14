@@ -193,11 +193,40 @@ class AudioCodec:
     async def _auto_detect_devices(self):
         """
         Detectar automaticamente e Selecionar melhor dispositivo.
+        Prioridade: Altofalante Real > VoiceMeeter > Padrão do Sistema
         """
         # Usar Seleção inteligente de Dispositivo
         in_info = select_audio_device("input", include_virtual=False)
-        out_info = select_audio_device("output", include_virtual=False)
-
+        
+        # Buscar Altofalante Real (Realtek, Speakers, etc)
+        out_info = None
+        preferred_out_names = [
+            "speakers",
+            "realtek",
+            "altofalantes",
+            "saída",
+            "output",
+        ]
+        
+        for i in range(len(sd.query_devices())):
+            dev = sd.query_devices(i)
+            if dev['max_output_channels'] > 0:
+                dev_name_lower = dev['name'].lower()
+                # Preferir Realtek/Speakers ao invés de VoiceMeeter
+                if any(pref in dev_name_lower for pref in preferred_out_names):
+                    if "voicemeeter" not in dev_name_lower:
+                        out_info = {
+                            "index": i,
+                            "name": dev['name'],
+                            "channels": dev['max_output_channels'],
+                            "sample_rate": int(dev['default_samplerate']),
+                        }
+                        break
+        
+        # Se não encontrou Realtek, tentar select_audio_device
+        if out_info is None:
+            out_info = select_audio_device("output", include_virtual=False)
+            
         if not in_info or not out_info:
             raise RuntimeError(
                 "Não é possível encontrar dispositivo de áudio disponível"
