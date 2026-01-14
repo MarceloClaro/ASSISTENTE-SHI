@@ -52,7 +52,7 @@ O ASSISTENTE-SHI utiliza **LLaVA + Ollama** como modelo de IA principal, oferece
 🔐 Modelo: LLaVA 1.6 (7B/13B/34B - Configurável)
 🖥️ Execução: 100% Local (sem internet necessária)
 💰 Custo: Completamente Gratuito (Open Source)
-⚙️ Requisitos: Ollama instalado + 4GB+ VRAM
+⚙️ Requisitos: Ollama instalado + 8GB+ RAM + CPU rápida
 ```
 
 **Vantagens Técnicas do LLaVA + Ollama:**
@@ -68,11 +68,13 @@ O ASSISTENTE-SHI utiliza **LLaVA + Ollama** como modelo de IA principal, oferece
 - ✅ **Sem Autenticação** - Funciona sem credenciais
 - ✅ **Multi-Modal** - Suporta texto + imagens
 
-**Limitações do LLaVA:**
-- ⚠️ Requer hardware local (VRAM suficiente)
-- ⚠️ Latência de ~2-5s (7B) para análise de imagens
+**⚠️ LIMITAÇÕES IMPORTANTES DO LLaVA:**
+- ❌ **REQUER HARDWARE POTENTE** - CPU rápida obrigatória
+- ❌ **Tempo de processamento: 40-90s** - Pode exceder timeout do servidor (60s)
+- ❌ **Incompatível com hardware lento** - Causa desconexão por timeout
 - ⚠️ Requer instalação prévia do Ollama
-- ⚠️ Modelos maiores (34B) precisam 24GB+ VRAM
+- ⚠️ Modelos maiores (34B) precisam 24GB+ RAM
+- ⚠️ **Xiaozhi limita execução a 60 segundos** - Hardware lento causa falha
 
 **Instalação do Ollama + LLaVA:**
 
@@ -113,66 +115,36 @@ ollama serve
 
 ### 📊 Especificações dos Modelos LLaVA
 
-| Modelo | VRAM | Velocidade | Qualidade | Recomendado Para |
-|--------|------|------------|-----------|------------------|
-| **llava:7b** | 4GB | ⚡ Rápido | ⭐⭐⭐ | Uso geral, testes |
-| **llava:13b** | 8GB | ⚡⚡ Médio | ⭐⭐⭐⭐ | Produção balanceada |
-| **llava:34b** | 24GB | ⚡⚡⚡ Lento | ⭐⭐⭐⭐⭐ | Máxima precisão |
+| Modelo | RAM | Tempo Médio | Qualidade | Recomendado Para |
+|--------|-----|-------------|-----------|------------------|
+| **llava:7b** | 4GB | ⚡ 40-60s | ⭐⭐⭐ | Hardware potente |
+| **llava:13b** | 8GB | ⚡⚡ 60-90s | ⭐⭐⭐⭐ | Máquinas rápidas |
+| **llava:34b** | 24GB | ⚡⚡⚡ >90s | ⭐⭐⭐⭐⭐ | Servidores dedicados |
+
+⚠️ **AVISO CRÍTICO**: Todos os modelos LLaVA podem exceder o limite de 60 segundos do servidor Xiaozhi em hardware comum. Considere usar API online se tiver problemas de timeout.
 
 ---
 
-### 🔄 Estratégia de Fallback Automático
+### 🔄 Estratégia de Fallback (REMOVIDA)
 
-```
-┌─────────────────────────────────────────────────┐
-│  Usuário faz pergunta com imagem                │
-└────────────────┬────────────────────────────────┘
-                 │
-                 v
-      ┌──────────────────────┐
-      │ Tentar GLM-4V/Zhipu  │
-      │ (Principal)          │
-      └──────────┬───────────┘
-                 │
-         ┌───────┴────────┐
-         │                │
-    ❌ Erro/Timeout       ✅ Sucesso
-         │                │
-         v                v
-    ┌──────────────────┐  │
-    │ Tentar LLaVA     │  │
-    │ Local (Fallback) │  │
-    └──────┬───────────┘  │
-           │              │
-       ┌───┴────┐         │
-       │        │         │
-   ❌ Erro  ✅ Sucesso   │
-       │        │         │
-       v        v         v
-   ┌─────────────────────────┐
-   │ Retornar resposta       │
-   │ (Melhor modelo disponível)
-   └─────────────────────────┘
-```
+**NOTA**: A estratégia de fallback automático GLM-4V → LLaVA foi removida. O sistema agora usa **apenas LLaVA local** para análise de imagens.
 
 ---
 
 ### 💡 Recomendação de Uso
 
-**Para Desenvolvimento/Testes:** 🏠 **LLaVA + Ollama Local**
+**⚠️ HARDWARE LENTO?** Use API online (OpenAI/Google Vision):
+- Respostas em 2-5 segundos garantidas
+- Não excede timeout do servidor
+- Custo: ~$0.01-0.05 por imagem
+
+**🏠 Hardware Potente (CPU Rápido)?** Use LLaVA Local:
 - Gratuito, sem limite de uso
 - Execução offline garantida
-- Ideal para prototipagem
+- **Requer completar análise em <60s**
 
-**Para Produção Crítica:** 🔐 **GPT-4V OpenAI**
-- Melhor qualidade garantida
-- Suporte profissional disponível
-- Ideal para aplicações comerciais
-
-**Para Uso Corporativo Chinês:** 🌍 **GLM-4V Zhipu**
-- Otimizado para caracterização chinesa
-- Menor custo em regiões chinesas
-- Integração nativa com Xiaozhi
+**⚠️ PROBLEMA CONHECIDO:**
+Em hardware comum/lento, LLaVA pode levar 60-90+ segundos para processar, causando desconexão do servidor Xiaozhi (limite de 60s). Nesses casos, recomenda-se usar API online paga.
 
 ---
 
@@ -203,209 +175,9 @@ wss://api.xiaozhi.me/mcp/?token=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQ
 }
 ```
 
-**Payload (Decodificado):**
-```json
-{
-  "userId": 766709,
-  "agentId": 1333467,
-  "endpointId": "agent_1333467",
-  "purpose": "mcp-endpoint",
-  "iat": 1768271047,
-  "exp": 1799828647
-}
-```
+**Seu token é como uma senha - guarde com segurança!** ✨
 
-**Parâmetros:**
-- `userId`: 766709 (Identificador do usuário)
-- `agentId`: 1333467 (Identificador do agente)
-- `endpointId`: agent_1333467 (Identificador do endpoint)
-- `purpose`: mcp-endpoint (Propósito da autenticação)
-- `iat`: 1768271047 (Emitido em: 13 de janeiro de 2026)
-- `exp`: 1799828647 (Expira em: 13 de janeiro de 2027)
-
-### Conexão ao Endpoint
-
-**Via Python WebSocket:**
-```python
-import asyncio
-import websockets
-import json
-
-async def connect_to_mcp():
-    uri = "wss://api.xiaozhi.me/mcp/?token=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjc2NjcwOSwiYWdlbnRJZCI6MTMzMzQ2NywiZW5kcG9pbnRJZCI6ImFnZW50XzEzMzM0NjciLCJwdXJwb3NlIjoibWNwLWVuZHBvaW50IiwiaWF0IjoxNzY4MjcxMDQ3LCJleHAiOjE3OTk4Mjg2NDd9.ceUsIEiALsqTY8L4lfYncUe26KKB92ITCmc_AYZWqUOZ9ChJZWv97UvYiQLAavsFTc7CB0n0xkpVZvqwoMnWfg"
-    
-    try:
-        async with websockets.connect(uri) as websocket:
-            print("✅ Conectado ao endpoint MCP!")
-            
-            # Enviar inicialização
-            init_message = {
-                "jsonrpc": "2.0",
-                "method": "initialize",
-                "id": 1,
-                "params": {
-                    "protocolVersion": "2024-11-05",
-                    "clientInfo": {
-                        "name": "assistente-shi",
-                        "version": "1.0.0"
-                    }
-                }
-            }
-            
-            await websocket.send(json.dumps(init_message))
-            response = await websocket.recv()
-            print(f"Resposta: {response}")
-            
-    except Exception as e:
-        print(f"❌ Erro na conexão: {e}")
-
-# Executar
-asyncio.run(connect_to_mcp())
-```
-
-### Documentação do Endpoint
-
-Para documentação completa sobre o MCP Endpoint, consulte:
-- 📚 [Wiki de Documentação (Feishu)](https://my.feishu.cn/wiki/HiPEwZ37XiitnwktX13cEM5KnSb)
-
-### Operações Suportadas
-
-**1. Inicializar Conexão**
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "initialize",
-  "id": 1,
-  "params": {
-    "protocolVersion": "2024-11-05",
-    "clientInfo": {
-      "name": "assistente-shi",
-      "version": "1.0.0"
-    }
-  }
-}
-```
-
-**2. Listar Ferramentas Disponíveis**
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "tools/list",
-  "id": 2,
-  "params": {}
-}
-```
-
-**3. Executar uma Ferramenta**
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "tools/call",
-  "id": 3,
-  "params": {
-    "name": "take_photo",
-    "arguments": {
-      "question": "Tire uma foto",
-      "context": "usuário solicitando captura de imagem"
-    }
-  }
-}
-```
-
-**4. Enviar Notificação**
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "notifications/initialized"
-}
-```
-
-### Ciclo de Vida da Conexão
-
-```
-┌─────────────────────────────────────────┐
-│ 1. Conectar ao WSS Endpoint             │
-└────────────────┬────────────────────────┘
-                 │
-                 v
-┌─────────────────────────────────────────┐
-│ 2. Enviar Initialize Request            │
-│    (método: initialize)                 │
-└────────────────┬────────────────────────┘
-                 │
-                 v
-┌─────────────────────────────────────────┐
-│ 3. Receber Initialize Response          │
-│    (Confirmação de conexão)             │
-└────────────────┬────────────────────────┘
-                 │
-                 v
-┌─────────────────────────────────────────┐
-│ 4. Enviar Initialized Notification      │
-│    (método: notifications/initialized)  │
-└────────────────┬────────────────────────┘
-                 │
-                 v
-┌─────────────────────────────────────────┐
-│ 5. Conexão Pronta                       │
-│    Pronto para enviar requisições       │
-└────────────────┬────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        │                 │
-        v                 v
-   ┌─────────┐      ┌─────────┐
-   │ Enviar  │      │Manter   │
-   │Tools/   │      │Keep-    │
-   │Call     │      │Alive    │
-   └────┬────┘      └────┬────┘
-        │                │
-        └────────┬───────┘
-                 │
-                 v
-         ┌────────────────┐
-         │ Desconectar    │
-         │ (fim da sessão)│
-         └────────────────┘
-```
-
-### Tratamento de Erros
-
-**Erro 401 - Não Autorizado (Token Inválido/Expirado)**
-```json
-{
-  "error": {
-    "code": -32603,
-    "message": "Invalid or expired token"
-  }
-}
-```
-
-**Erro 500 - Servidor Indisponível**
-```json
-{
-  "error": {
-    "code": -32000,
-    "message": "Internal server error"
-  }
-}
-```
-
-**Reconexão Automática:**
-- O cliente deve implementar lógica de retry com backoff exponencial
-- Máximo de 5 tentativas de reconexão
-- Intervalo inicial: 1 segundo, máximo: 60 segundos
-
-### Monitoramento da Conexão
-
-```bash
-# Verificar status do endpoint
-curl -I https://api.xiaozhi.me/mcp/
-
-# Testar com wscat (WebSocket CLI)
-npm install -g wscat
-wscat -c "wss://api.xiaozhi.me/mcp/?token=..."
-```
+A conexão acontece automaticamente quando você inicia o assistente. Você não precisa fazer nada além de colocar o token no arquivo de configuração.
 
 ---
 
@@ -426,495 +198,72 @@ O ASSISTENTE-SHI utiliza o serviço **xiaozhi.me de forma gratuita** nas seguint
 
 #### **2. Ferramentas MCP Básicas (Gratuitas - Até Certo Uso)**
 
-**Ferramentas Sempre Gratuitas:**
-- ✅ **Sistema** (4) - Controle de volume, aplicativos
-- ✅ **Calendário** (7) - Criar, editar, listar eventos
-- ✅ **Timer** (3) - Temporizadores básicos
-- ✅ **Música** (7) - Controles de reprodução local
-- ✅ **Câmera** (2) - Captura de screenshots
+## 🎯 O que o ASSISTENTE-SHI faz?
 
-**Ferramentas com Limite Gratuito (Free Tier):**
-- ⚠️ **Análise de Imagens** - 10 análises/dia grátis
-- ⚠️ **Consulta de Informações** - 50 requisições/dia
-- ⚠️ **Busca Web** - 20 buscas/dia
-- ⚠️ **Ba Zi (Astrologia)** - 5 análises/dia
+O assistente oferece 32+ ferramentas prontas para usar:
 
-#### **3. Reconexão e Failover Automático (Gratuito)**
+- 📅 **Calendário** - Criar e gerenciar eventos
+- 🎵 **Música** - Tocar suas músicas favoritas
+- ⏱️ **Temporizadores** - Definir contagens regressivas
+- 🖥️ **Controle do Sistema** - Mudar volume, abrir aplicativos
+- 📸 **Câmera** - Tirar fotos e analisar imagens
+- 🔍 **Busca na Web** - Pesquisar informações online
+- 🗺️ **Mapas** - Encontrar locais e rotas
+- E muito mais!
 
-```
-✅ Reconexão Automática: Sem custo extra
-✅ Load Balancing: Distribuição inteligente
-✅ Failover para LLaVA Local: Completamente gratuito
-✅ Queue Management: Gerenciamento de fila
-✅ Error Recovery: Recuperação automática
-```
+## 🚀 Como Começar em 5 Minutos
 
-**Como Funciona o Fallback Gratuito:**
-```
-Requisição com Imagem
-        ↓
-Tenta GLM-4V (Pode ter custo ou estar indisponível)
-        ↓
-❌ Falha? Usa LLaVA Local (100% GRATUITO)
-        ↓
-✅ Retorna resposta com melhor modelo disponível
-```
+### 1️⃣ Pré-requisitos (Antes de Instalar)
 
-#### **4. Segurança e Proteção (Gratuita)**
-- ✅ Criptografia WSS/TLS 1.3: Sem custo
-- ✅ Autenticação JWT: Sem custo
-- ✅ Proteção DDoS: Incluída gratuitamente
-- ✅ SSL/TLS: Certificados válidos inclusos
+Você precisa ter:
+- 💻 **Windows 10+**, macOS 10.15+ ou Linux
+- 🐍 **Python 3.9 a 3.12** instalado
+- 🎤 **Microfone e alto-falante** funcionando
+- 🌐 **Internet estável**
+- 📀 **2GB de espaço em disco**
 
-#### **5. Infraestrutura e Performance (Parcialmente Gratuita)**
-- ✅ **CDN Global**: Sem cobranças adicionais
-- ✅ **Latência <200ms**: Otimização incluída
-- ✅ **99.9% SLA**: Garantia de disponibilidade
-- ✅ **Load Balancing**: Distribuição automática
+**Opcional (para análise de imagens):**
+- 💾 4.5GB adicionais para modelo de visão (Ollama)
 
----
+### 2️⃣ Clonar o Projeto
 
-### 💳 Partes PAGAS do Serviço Xiaozhi.me
-
-#### **1. Modelos de IA Avançados (Pago)**
-
-**GLM-4V (Zhipu) - COM CUSTO:**
-- 💰 **Custo:** ¥0.1-0.5 / 1K tokens (~R$ 0.08-0.40)
-- 📌 **Status Atual:** Token expirado/inválido (não está sendo cobrado)
-- ⚠️ **Quando Usar:** Análise de imagens de alta qualidade
-- ℹ️ **Nossa Implementação:** Usando LLaVA local como fallback
-
-**GPT-4V (OpenAI) - COM CUSTO (opcional):**
-- 💰 **Custo:** $0.01-0.03 / 1K tokens (~R$ 0.05-0.15)
-- 📌 **Integração:** Disponível mas não ativa por padrão
-- ⚠️ **Quando Usar:** Máxima qualidade de respostas
-
-**LLaVA (Ollama) - 100% GRATUITO:**
-- 🆓 **Custo:** Gratuito (Open Source)
-- 📌 **Status:** Ativo como fallback padrão
-- ✅ **Quando Usar:** Produção, desenvolvimento, análise de imagens
-- 🎯 **Nossa Recomendação:** Melhor custo-benefício
-
-#### **2. Requisições Além do Limite Gratuito (Pago)**
-
-```
-Ferramenta          Limite Gratuito    Preço Extra
-────────────────────────────────────────────────
-Análise Imagens     10/dia             ¥0.05 cada
-Busca Web           20/dia             ¥0.02 cada
-Informações         50/dia             ¥0.01 cada
-Ba Zi               5/dia              ¥0.10 cada
+```bash
+git clone https://github.com/MarceloClaro/ASSISTENTE-SHI.git
+cd ASSISTENTE-SHI
 ```
 
-#### **3. Armazenamento Avançado (Pago)**
-- 💾 **Histórico expandido:** Além de 30 dias
-- 🎯 **Storage ilimitado:** Acima de 10GB
-- 📊 **Analytics avançados:** Relatórios premium
-
-#### **4. Recursos Premium (Pago Opcional)**
-- 🔌 **Webhooks avançados:** Triggers customizados
-- 📡 **API rate limit superior:** Acima de 1000 req/min
-- 🛡️ **Suporte prioritário 24/7:** SLA garantido
-- 🔧 **Integrações customizadas:** Desenvolvimento especial
-
----
-
-## 💡 Estratégia de Uso GRATUITO do ASSISTENTE-SHI
-
-### **Usando 100% Gratuito:**
-
-```python
-# Configuração para uso totalmente gratuito
-{
-  "llm": {
-    "api": "ollama",        # Gratuito (LLaVA local)
-    "model": "llava:7b",    # Gratuito
-    "base_url": "http://localhost:11434/api"
-  },
-  "mcp": {
-    "endpoint": "wss://api.xiaozhi.me/mcp/",  # Gratuito
-    "token": "seu_jwt_aqui"
-  },
-  "tools": {
-    "use_paid_features": false   # Desativa análise paga
-  }
-}
-```
-
-### **Funcionalidades Gratuitas Ativas:**
-
-✅ **Sempre Disponíveis (100% Gratuito):**
-- Controle de Sistema (Volume, Aplicativos)
-- Calendário (Criar, Editar, Listar)
-- Temporizadores
-- Controle de Música Local
-- Screenshots e Fotos Locais
-- Comunicação via WebSocket Seguro
-- Processamento de Linguagem Natural (LLaVA)
-- Análise de Imagens Ilimitada (Ollama)
-- Reconexão Automática
-
-⚠️ **Com Limite Diário (Ferramentas Online - Gratuito):**
-- Busca Web: 20/dia
-- Informações Gerais: 50/dia
-- Ba Zi: 5/dia
-
----
-
-## 💰 Custo Real do ASSISTENTE-SHI Hoje
-
-```
-┌─────────────────────────────────────────┐
-│        ASSISTENTE-SHI - Custo 2026      │
-├─────────────────────────────────────────┤
-│                                         │
-│ 🆓 Infraestrutura Xiaozhi: GRATUITA   │
-│    - Endpoint MCP                      │
-│    - WebSocket Seguro                  │
-│    - Load Balancing                    │
-│    - CDN Global                        │
-│                                         │
-│ 🆓 Ferramentas Básicas: GRATUITAS      │
-│    - Sistema (4 tools)                 │
-│    - Calendário (7 tools)              │
-│    - Música (7 tools)                  │
-│    - Timer (3 tools)                   │
-│    - Câmera (2 tools)                  │
-│                                         │
-│ 🆓 IA Local (Ollama): GRATUITA         │
-│    - LLaVA 7B/13B/34B                  │
-│    - Visão Computacional ILIMITADA     │
-│    - Processamento Linguagem Natural   │
-│    - Análise de Imagens SEM LIMITE     │
-│    - Execução 100% Offline             │
-│                                         │
-│ ╔═════════════════════════════════════╗│
-│ ║  CUSTO TOTAL MENSAL: R$ 0,00 ✅     ║│
-│ ╚═════════════════════════════════════╝│
-│                                         │
-│ 📝 Observações:                         │
-│ - Modelo: LLaVA (Ollama) 100% Local   │
-│ - APIs pagas removidas (custo zero)   │
-│ - Análise imagens: ILIMITADA          │
-│ - Funciona completamente offline      │
-│                                         │
-└─────────────────────────────────────────┘
-```
-
----
-
-### 🖥️ Como adicionar um dispositivo no Console Xiaozhi ("Add Device")
-
-Passo a passo rápido (modal de 6 dígitos):
-
-1. Abra o console: https://xiaozhi.me/console/agents/1333467/config (faça login).
-2. Clique em **Add Device**: o modal pedirá um **Verification Code** (6 dígitos).
-3. No dispositivo que quer parear, peça para ele anunciar/mostrar o código e digite no campo.
-4. Clique em **Confirm**. Se aparecer erro, gere um novo código ou verifique conexão/rede.
-
-Visual rápido do modal (esquemático):
-
-```text
-┌──────────────────────────────┐
-│ Add Device                   │
-│ Verification Code [ _ _ _ _ _ _ ]
-│                              │
-│ [Cancel]        [Confirm]    │
-└──────────────────────────────┘
-```
-
-Erros comuns e solução:
-
-- **Código expirado**: gere/peça um código novo.
-- **Campos em branco ou espaços**: remova espaços extras; só 6 dígitos numéricos.
-- **Rede instável**: reconecte à internet e tente novamente.
-- **Conta não autenticada**: faça login no console antes de abrir o modal.
-
-### 🚀 Performance e Infraestrutura
-
-- **✅ Servidores Distribuídos Globalmente** - CDN com pontos de presença em múltiplas regiões (América Latina, EUA, Europa, Ásia)
-- **✅ Latência Ultra-Baixa** - Resposta em <200ms com otimização de rota
-- **✅ Alta Disponibilidade (99.9% SLA)** - Redundância total de servidores
-- **✅ Escalabilidade Automática** - Suporta picos de tráfego sem degradação
-- **✅ Load Balancing Inteligente** - Distribuição automática de requisições
-
-### 🔒 Segurança
-
-- **✅ Criptografia End-to-End (WSS)** - Protocolo TLS 1.3
-- **✅ Autenticação JWT Robusta** - Token com validade de 1 ano
-- **✅ Isolamento de Conta** - Cada agente isolado com ID único
-- **✅ Auditoria Completa** - Logs de todas as requisições
-- **✅ Certificados SSL Válidos** - Renovação automática
-- **✅ Proteção DDoS** - Mitigação automática de ataques
-
-### 💰 Custos Efetivos
-
-- **✅ Sem Taxa de Conexão** - Acesso gratuito ao endpoint
-- **✅ Pagamento por Uso** - Você só paga pelas ferramentas MCP utilizadas
-- **✅ Sem Overhead de Infraestrutura** - Não precisa gerenciar servidores
-- **✅ Economia de Banda** - Compressão automática de dados
-- **✅ Preço Competitivo** - Melhor que gerenciar próprio servidor
-- **✅ Sem Contratos Longos** - Flexibilidade total
-
-### 🔧 Funcionalidades Técnicas
-
-- **✅ 32+ Ferramentas MCP Integradas** - Pronto para uso, sem desenvolvimento adicional
-- **✅ Atualizações Automáticas** - Novas ferramentas sem ação necessária
-- **✅ Compatibilidade Multiplataforma** - Windows, macOS, Linux
-- **✅ Suporte a WebSocket Nativo** - Conexão eficiente bidirecional
-- **✅ Reconexão Automática** - Recuperação automática de falhas
-- **✅ Queue Management** - Fila inteligente de requisições
-
-### 🤖 Integração de IA
-
-- **✅ Modelos LLM Integrados** - Acesso a GLM-4V, GPT-4V, Claude
-- **✅ Visão Computacional** - Análise de imagens em tempo real
-- **✅ Processamento de Voz** - STT e TTS nativos
-- **✅ Análise Contextual** - Compreensão profunda de intent
-- **✅ Multi-Idioma** - Suporte a 50+ idiomas
-- **✅ Aprendizado Contínuo** - Melhoria com cada uso
-
-### 📊 Monitoramento e Analytics
-
-- **✅ Dashboard em Tempo Real** - Visualizar uso e performance
-- **✅ Relatórios Detalhados** - Análise de uso por ferramenta
-- **✅ Métricas de Performance** - Latência, throughput, erros
-- **✅ Alertas Automáticos** - Notificações de anomalias
-- **✅ Health Check Contínuo** - Verificação de disponibilidade
-- **✅ Histórico de Requisições** - Auditoria completa
-
-### 🎯 Produtividade
-
-- **✅ Setup em 5 Minutos** - Documentação clara e JWT pronto
-- **✅ Zero Manutenção** - Serviço gerenciado totalmente
-- **✅ Suporte 24/7** - Time de desenvolvimento sempre disponível
-- **✅ Documentação Completa** - Wiki detalhada em Feishu
-- **✅ Exemplos de Código** - Python, Node.js, Go prontos
-- **✅ Debugging Facilitado** - Logs estruturados e detalhados
-
-### 🌍 Recursos Avançados
-
-- **✅ Roteamento Inteligente** - Failover automático em caso de falha
-- **✅ Rate Limiting Justo** - Limites generosos para desenvolvimento
-- **✅ API Versioning** - Compatibilidade com múltiplas versões
-- **✅ Webhooks** - Notificações em tempo real para seus servidores
-- **✅ Batch Processing** - Processar múltiplas requisições eficientemente
-- **✅ Caching Inteligente** - Redução de tráfego com cache automático
-
-### 📱 Compatibilidade
-
-- **✅ Suporte a todos os Navegadores** - Chrome, Firefox, Safari, Edge
-- **✅ Mobile-Friendly** - Funciona perfeitamente em smartphones
-- **✅ IoT Devices** - Compatível com Raspberry Pi, Arduino, etc
-- **✅ Embedded Systems** - Uso em sistemas embarcados
-- **✅ Cloud Platforms** - Funciona em AWS, Azure, GCP
-- **✅ Containers** - Docker, Kubernetes prontos
-
-### 💡 Casos de Uso Ideais
-
-| Caso de Uso | Xiaozhi.me | Local |
-|---|---|---|
-| **Prototipagem Rápida** | ✅ Excelente | ⚠️ Lento |
-| **Produção em Escala** | ✅ Recomendado | ❌ Limitado |
-| **Aplicações Críticas** | ✅ SLA Garantido | ❌ Sem garantias |
-| **Múltiplos Usuários** | ✅ Escalável | ❌ Pode sobrecarregar |
-| **Análise de Imagens** | ✅ Rápido | ⚠️ Ressource intensivo |
-| **Processamento 24/7** | ✅ Confiável | ❌ Requer manutenção |
-| **Integração com IA** | ✅ Simples | ❌ Complexo |
-| **Desenvolvimento Iterativo** | ✅ Fácil | ⚠️ Manual |
-
----
-
-### 🔧 Ecossistema de Ferramentas MCP (32+ Ferramentas)
-
-- **Controle de Sistema**: Monitoramento, gerenciamento de aplicativos, controle de volume
-- **Gerenciador de Agenda**: Criar, consultar, atualizar, deletar eventos com lembretes inteligentes
-- **Tarefas Agendadas**: Temporizadores com suporte a execução atrasada
-- **Reprodutor de Música**: Busca online, controle de reprodução, letras, cache local
-- **Consulta de Passagens Aéreas**: Integração com serviços de transporte
-- **Busca na Web**: Pesquisa Bing e análise de conteúdo
-- **Receitas**: Banco de dados rico de receitas com recomendações
-- **Mapas**: Serviços de mapeamento com geocodificação, planejamento de rotas, busca por proximidade
-- **Ba Zi (Astrologia Chinesa)**: Análise de compatibilidade matrimonial e calendário lunar
-- **Câmera**: Captura de imagens e análise com IA
-
-### 🏠 Integração IoT
-
-- **Gerenciamento Unificado**: Arquitetura baseada em padrão Thing para controle de dispositivos
-- **Controle de Casa Inteligente**: Luzes, volume, sensores de temperatura
-- **Sincronização de Estado em Tempo Real**: Monitoramento contínuo com atualizações incrementais
-- **Design Extensível**: Drivers modulares para novos dispositivos
-
-### 🎵 Processamento de Áudio Avançado
-
-- **Processamento Multinível**: Codec Opus, reamostragem em tempo real
-- **Detecção de Atividade de Fala (VAD)**: Interrupção inteligente de áudio
-- **Detecção de Palavra-Chave**: Modelos Sherpa-ONNX com suporte a pinyin
-- **Gerenciamento de Stream**: Entradas/saídas independentes com recuperação de erros
-- **Cancelamento de Eco**: Integração com módulo de processamento de áudio WebRTC
-- **Gravação de Áudio do Sistema**: Captura de áudio do sistema operacional
-
-### 🖥️ Interface do Usuário
-
-- **Interface Gráfica**: GUI moderna baseada em PyQt5 com expressões e exibição de texto
-- **Modo Linha de Comando**: CLI para ambientes sem GUI
-- **Bandeja do Sistema**: Suporte para execução em background
-- **Atalhos Globais**: Teclas de atalho personalizáveis
-- **Painel de Configurações**: Interface completa para personalização
-
-### 🔒 Segurança e Estabilidade
-
-- **Transmissão de Áudio Criptografada**: Protocolo WSS seguro
-- **Sistema de Ativação de Dispositivo**: Suporte a protocolos v1/v2
-- **Recuperação de Erros**: Reconexão automática e tratamento robusto
-
-### 🌐 Suporte Multiplataforma
-
-- **Compatibilidade**: Windows 10+, macOS 10.15+, Linux
-- **Protocolos**: WebSocket e MQTT
-- **Modos**: GUI e CLI
-- **Otimização**: Específica para cada plataforma
-
-## 🚀 Início Rápido
-
-### Requisitos do Sistema
-
-**Mínimo:**
-- Python 3.9 - 3.12
-- Windows 10+, macOS 10.15+, ou Linux
-- Microfone e alto-falante
-- Conexão de internet estável
-
-**Recomendado:**
-- 8GB+ RAM
-- CPU com suporte AVX
-- 2GB espaço em disco
-- Áudio com taxa de amostragem de 16kHz
-
-### Instalação
-
-#### 🚀 Instalação Rápida (Recomendada)
-
-Use os scripts automatizados que verificam e instalam todas as dependências, incluindo o Ollama:
+### 3️⃣ Instalação Automática (Recomendado)
 
 **Windows:**
 ```bash
-# Inicia aplicação com verificação automática
 start.bat
 ```
 
 **Linux/macOS:**
 ```bash
-# Tornar executável e rodar
 chmod +x start.sh
 ./start.sh
 ```
 
-Os scripts verificam automaticamente:
-- ✅ Ambiente virtual Python
-- ✅ Dependências instaladas
-- ✅ **Ollama instalado e rodando**
-- ✅ **Modelo LLaVA disponível**
+O script instalará automaticamente tudo!
 
-Se algo estiver faltando, os scripts oferecem instalação automática!
+### 4️⃣ Obter Token de Acesso
 
----
+1. Vá em [xiaozhi.me/console](https://xiaozhi.me/console)
+2. Faça login ou crie uma conta
+3. Vá em "Agents" → "Config"
+4. Clique em "Generate Token" e copie
+5. Cole no arquivo de configuração (`config/config.json`)
 
-#### 🔧 Instalação Manual Completa
+### 5️⃣ Iniciar o Assistente
 
-Se preferir controle total do processo:
-
-**1. Clonar Repositório**
 ```bash
-git clone https://github.com/MarceloClaro/ASSISTENTE-SHI.git
-cd ASSISTENTE-SHI
-```
-
-**2. Ambiente Virtual Python**
-```bash
-# Criar ambiente virtual
-python -m venv venv
-
-# Ativar (Windows)
-venv\Scripts\activate
-
-# Ativar (Linux/macOS)
-source venv/bin/activate
-```
-
-**3. Instalar Dependências Python**
-```bash
-pip install -r requirements.txt
-```
-
-**4. Instalar Ollama (Para Análise de Imagens)**
-
-**Opção A - Instalação Automática:**
-```bash
-python setup_ollama.py
-```
-Este script:
-- Detecta seu sistema operacional
-- Baixa e instala o Ollama
-- Inicia o serviço automaticamente
-- Faz download do modelo LLaVA (7B)
-
-**Opção B - Instalação Manual:**
-
-- **Windows**: Baixe de [ollama.ai/download](https://ollama.ai/download)
-- **macOS**: `brew install ollama` ou instalador DMG
-- **Linux**: `curl -fsSL https://ollama.ai/install.sh | sh`
-
-Depois instale o modelo:
-```bash
-ollama serve  # Inicia serviço
-ollama pull llava:7b  # Baixa modelo (4.5GB)
-```
-
-**5. Executar Aplicação**
-```bash
-# Interface Gráfica (GUI)
 python main.py --mode gui --protocol websocket
-
-# Linha de Comando (CLI)
-python main.py --mode cli
 ```
+
+**Pronto!** 🎉 O assistente está rodando!
 
 ---
-
-#### 📦 Instalação Apenas de Dependências (Sem Ollama)
-
-Se não precisar de análise de imagens:
-
-```bash
-git clone https://github.com/MarceloClaro/ASSISTENTE-SHI.git
-cd ASSISTENTE-SHI
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python main.py --mode gui
-```
-
-> **Nota:** Sem o Ollama, as funções de visão computacional ficarão desabilitadas.
-
----
-
-#### 🔍 Verificar Instalação
-
-Após instalar, verifique se tudo está funcionando:
-
-```bash
-# Verificar Python e dependências
-python --version
-pip list | grep -E "PyQt5|qasync|requests"
-
-# Verificar Ollama
-ollama --version
-ollama list  # Deve mostrar llava:7b
-
-# Teste rápido do sistema
-python diagnose_system.py
-```
 
 ## 📖 Documentação e Guias
 
@@ -1494,23 +843,33 @@ ASSISTENTE-SHI/
 └────────────────────────────────────────────────────────────┘
 ```
 
-## 🔄 Status Atual
+## 🔄 Status Atual do Projeto
 
-### ✅ Funcional
+### ✅ Totalmente Funcional
 
-- ✅ Interface GUI com WebSocket
-- ✅ 32 ferramentas MCP registradas
-- ✅ Processamento de áudio Opus
-- ✅ Interação com IA em tempo real
-- ✅ Suporte a câmera (captura de fotos)
-- ✅ Gerenciamento de calendário
-- ✅ Sistema de lembretes
+- ✅ Interface GUI com WebSocket conectado
+- ✅ 32 ferramentas MCP registradas e operacionais
+- ✅ Processamento de áudio Opus em tempo real
+- ✅ Interação com IA fluida e responsiva
+- ✅ Captura de fotos via câmera
+- ✅ Gerenciamento de calendário integrado
+- ✅ Sistema de lembretes funcionando
+- ✅ Injeção de contexto com delay de 2s (corrigido)
+- ✅ Retorno de texto plano (sem double JSON encoding)
 
-### ⚠️ Conhecido
+### ⚠️ Limitações Conhecidas
 
-- ⚠️ Modelo de Wake Word ausente (Sherpa-ONNX)
-- ⚠️ API de Visão Remota retornando 404
-- ⚠️ Timeout de conexão WebSocket após ~1 minuto em teste
+- ⚠️ **Análise de visão LLaVA**: Requer hardware potente (CPU rápido)
+  - Tempo de processamento: 40-90+ segundos em hardware comum
+  - **Causa timeout do servidor Xiaozhi (limite: 60s)**
+  - **Solução**: Usar API online (OpenAI/Google Vision) em hardware lento
+- ⚠️ Modelo de Wake Word ausente (Sherpa-ONNX) - wake word manual apenas
+
+### 🐛 Bugs Corrigidos Recentemente
+
+- ✅ **Bug #1**: TTS não vocalizava descrição (timing de 244ms) → Corrigido com delay de 2s
+- ✅ **Bug #2**: Double JSON encoding causava escape de JSON → Corrigido retornando texto plano
+- ✅ **Bug #3**: Timeout do Ollama → Configurado para 90s + 15 tokens (hardware lento ainda problemático)
 
 ## 🛠️ Desenvolvimento
 
@@ -1566,6 +925,6 @@ Para dúvidas, sugestões ou relatórios de bugs, abra uma issue no repositório
 
 ---
 
-**Última atualização**: 13 de janeiro de 2026
-**Status**: ✅ Operacional em modo GUI + WebSocket
->>>>>>> master
+**Última atualização**: 14 de janeiro de 2026  
+**Status**: ✅ Operacional em modo GUI + WebSocket  
+**Versão**: 1.1.0 (Com correções de timeout e encoding)
