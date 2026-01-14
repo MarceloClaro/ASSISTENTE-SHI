@@ -41,25 +41,46 @@ def get_camera_instance():
 
 def take_photo(arguments: dict) -> str:
     """
-    de.
+    Captura foto, analisa com Ollama e injeta descrição como contexto.
+    
+    Args:
+        arguments: {
+            "question": "Pergunta sobre a imagem",
+            "context": "Contexto adicional (opcional)"
+        }
+    
+    Returns:
+        JSON com descrição injetada no contexto do usuário
     """
     import json
     import re
     
     camera = get_camera_instance()
-    logger.info(f"Using camera implementation: {camera.__class__.__name__}")
+    logger.info(
+        f"Using camera implementation: "
+        f"{camera.__class__.__name__}"
+    )
 
     question = arguments.get("question", "")
     context = arguments.get("context", "")
-    logger.info(f"Taking photo with question: {question}, context: {context[:50] if context else 'None'}...")
+    logger.info(
+        f"Taking photo with question: {question}, "
+        f"context: {context[:50] if context else 'None'}..."
+    )
 
-    # 
+    # Capturar foto
     success = camera.capture()
     if not success:
         logger.error("Failed to capture photo")
-        return "Falha ao capturar foto da câmera"
+        return json.dumps({
+            "content": [{
+                "type": "text",
+                "text": "Falha ao capturar foto da câmera"
+            }],
+            "isError": True
+        })
 
-    # 
+    # Analisar com Ollama local
     logger.info("Photo captured, starting analysis...")
     result = camera.analyze(question, context)
     
@@ -69,21 +90,109 @@ def take_photo(arguments: dict) -> str:
         if result_dict.get("success") and "text" in result_dict:
             description = result_dict["text"].strip()
             
-            # Limpar a descrição: remover quebras de linha, espaços extras
+            # Limpar descrição: remover quebras, espaços extras
             description = re.sub(r'\s+', ' ', description)
-            description = description.replace('"', '')  # Remover aspas
-            description = description.replace('\\', '')  # Remover barras
-            description = description.replace('\n', ' ')  # Quebras de linha
-            description = description.replace('\r', ' ')  # Retorno de carro
+            description = description.replace('"', '')
+            description = description.replace('\\', '')
+            description = description.replace('\n', ' ')
+            description = description.replace('\r', ' ')
             
             logger.info(f"✅ Descrição limpa: {description[:100]}...")
-            # Retornar apenas o texto da descrição para o LLM processar
-            return description
+            
+            # 🆕 INJETAR DESCRIÇÃO NO CONTEXTO DO USUÁRIO
+            logger.info(
+                "[Camera] Enriquecendo contexto com "
+                "descrição visual..."
+            )
+            enhanced_context = _enhance_user_context(
+                original_question=question,
+                image_description=description,
+                user_context=context
+            )
+            
+            logger.info(
+                f"[Camera] Contexto injetado para LLM "
+                f"({len(enhanced_context)} chars)"
+            )
+            
+            # Retornar com contexto injetado
+            return json.dumps({
+                "content": [{
+                    "type": "text",
+                    "text": enhanced_context
+                }],
+                "isError": False
+            })
         else:
-            error_msg = result_dict.get("message", "Erro desconhecido")
+            error_msg = result_dict.get(
+                "message", "Erro desconhecido"
+            )
             logger.error(f"❌ Análise falhou: {error_msg}")
-            return f"Erro ao analisar imagem: {error_msg}"
+            return json.dumps({
+                "content": [{
+                    "type": "text",
+                    "text": f"Erro ao analisar imagem: {error_msg}"
+                }],
+                "isError": True
+            })
     except json.JSONDecodeError as e:
         logger.error(f"❌ Erro ao parsear resposta: {e}")
-        # Se não for JSON válido, retornar mensagem de erro
-        return "Erro ao processar resposta da análise de imagem"
+        return json.dumps({
+            "content": [{
+                "type": "text",
+                "text": (
+                    "Erro ao processar resposta da análise "
+                    "de imagem"
+                )
+            }],
+            "isError": True
+        })
+
+
+def _enhance_user_context(
+    original_question: str,
+    image_description: str,
+    user_context: str = ""
+) -> str:
+    """
+    Cria prompt enriquecido com descrição visual para LLM.
+    
+    Args:
+        original_question: Pergunta do usuário
+        image_description: Descrição gerada por Ollama
+        user_context: Contexto adicional (opcional)
+    
+    Returns:
+        Prompt enriquecido para LLM processar
+    """
+    
+    # Template do prompt enriquecido
+    template = (
+        "📸 ANÁLISE DE IMAGEM COM CONTEXTO VISUAL\n\n"
+        "**Descrição da Imagem Analisada (Ollama Local):**\n"
+        "{description}\n\n"
+        "**Pergunta do Usuário:**\n"
+        "{question}\n"
+        "{context_section}\n\n"
+        "**Instruções para Resposta:**\n"
+        "1. Considere a descrição visual acima como referência\n"
+        "2. Responda de forma detalhada e específica\n"
+        "3. Se tiver informações adicionais, compartilhe\n"
+        "4. Mantenha tom conversacional e amigável"
+    )
+    
+    # Montar seção de contexto adicional
+    context_section = ""
+    if user_context:
+        context_section = (
+            f"\n\n**Contexto Adicional:**\n{user_context}"
+        )
+    
+    # Montar prompt final
+    prompt = template.format(
+        description=image_description.strip(),
+        question=original_question.strip(),
+        context_section=context_section.strip()
+    )
+    
+    return prompt.strip()
