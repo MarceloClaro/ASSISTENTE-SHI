@@ -14,6 +14,7 @@ try:
     SMOLVLM2_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
     SMOLVLM2_AVAILABLE = False
+    SmolVLM2Optimized = None
 
 logger = get_logger(__name__)
 
@@ -54,7 +55,8 @@ def get_camera_instance():
 
 def take_photo(arguments: dict) -> str:
     """
-    Captura foto, analisa com Ollama e injeta descrição como contexto.
+    Captura foto e analisa com SmolVLM2 (6-9x mais rápido que LLaVA).
+    Fallback automático para LLaVA se SmolVLM2 não disponível.
     
     Args:
         arguments: {
@@ -67,18 +69,107 @@ def take_photo(arguments: dict) -> str:
     """
     import json
     import re
+    import asyncio
     
-    camera = get_camera_instance()
-    logger.info(
-        f"Using camera implementation: "
-        f"{camera.__class__.__name__}"
-    )
-
     question = arguments.get("question", "")
     context = arguments.get("context", "")
+    
     logger.info(
         f"Taking photo with question: {question}, "
         f"context: {context[:50] if context else 'None'}..."
+    )
+
+    # ✨ TENTAR USAR SmolVLM2 PRIMEIRO (6-9x mais rápido)
+    if SMOLVLM2_AVAILABLE:
+        try:
+            logger.info("🚀 Usando SmolVLM2 + OpenVINO (6-9x mais rápido)...")
+            
+            # Capturar foto normal
+            camera = NormalCamera.get_instance()
+            success = camera.capture()
+            if not success:
+                logger.error("Failed to capture photo")
+                return "Falha ao capturar foto da câmera"
+            
+            # Salvar foto temporária
+            import cv2
+            jpeg_data = camera.jpeg_data["buf"]
+            import numpy as np
+            import tempfile
+            
+            nparr = np.frombuffer(jpeg_data, np.uint8)
+            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            with tempfile.NamedTemporaryFile(
+                suffix=".jpg",
+                delete=False
+            ) as tmp:
+                cv2.imwrite(tmp.name, frame)
+                temp_path = tmp.name
+            
+            # Analisar com SmolVLM2
+            model = SmolVLM2Optimized()
+            
+            async def analyze_async():
+                await model.initialize()
+                result = await model.analyze_image(temp_path)
+                return result
+            
+            # Rodar análise async
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Se já temos um loop rodando, criar task
+                    import asyncio
+                    result = loop.run_until_complete(analyze_async())
+                else:
+                    result = asyncio.run(analyze_async())
+            except RuntimeError:
+                result = asyncio.run(analyze_async())
+            
+            # Limpar arquivo temporário
+            import os
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
+            
+            if result.get("success"):
+                description = result.get("description", "").strip()
+                
+                # Limpar descrição
+                description = re.sub(r'\s+', ' ', description)
+                description = description.replace('"', '')
+                
+                logger.info("SmolVLM2 análise bem-sucedida!")
+                elapsed = result.get('elapsed_time_seconds', 0)
+                logger.info(f"Tempo: {elapsed:.1f}s")
+                
+                enhanced_context = _enhance_user_context(
+                    original_question=question,
+                    image_description=description,
+                    user_context=context
+                )
+                
+                import time
+                time.sleep(2.0)
+                return enhanced_context
+            else:
+                logger.warning(
+                    "SmolVLM2 failed, falling back to LLaVA..."
+                )
+        
+        except Exception as e:
+            logger.warning(
+                f"SmolVLM2 error: {e}, falling back to LLaVA..."
+            )
+    
+    # FALLBACK: Usar LLaVA (original)
+    logger.info("📷 Usando LLaVA + Ollama (fallback)...")
+    
+    camera = get_camera_instance()
+    logger.info(
+        f"Using camera implementation: {camera.__class__.__name__}"
     )
 
     # Capturar foto
