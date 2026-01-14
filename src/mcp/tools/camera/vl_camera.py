@@ -31,39 +31,33 @@ class VLCamera(BaseCamera):
 
         # Tentar obter config do CAMERA_OPTIONS (preferido)
         # ou CAMERA (fallback)
+        # Configuração para Ollama local apenas
         api_key = config.get_config(
             "CAMERA_OPTIONS.VL_API_KEY",
-            config.get_config("CAMERA.VLapi_key", "")
+            config.get_config("CAMERA.VLapi_key", "ollama")
         )
         
         base_url = config.get_config(
             "CAMERA_OPTIONS.LOCAL_VL_URL",
             config.get_config(
                 "CAMERA.Local_VL_url",
-                "https://api.tenclass.net/xiaozhi/vision/explain"
+                "http://localhost:11434"
             )
         )
         
-        # Se é a URL antiga (xiaozhi.me), corrigir para tenclass
-        if base_url and "xiaozhi.me" in base_url:
-            base_url = base_url.replace(
-                "api.xiaozhi.me",
-                "api.tenclass.net/xiaozhi"
-            )
-        
-        # Guardar base_url para decisões posteriores
+        # Guardar base_url para Ollama
         self.base_url = base_url
 
         self.client = OpenAI(
-            api_key=api_key if api_key else "sk-default-key",
+            api_key=api_key if api_key else "ollama",
             base_url=base_url,
         )
         
         model_val = config.get_config(
             "CAMERA_OPTIONS.MODELS",
-            config.get_config("CAMERA.models", "glm-4v-plus")
+            config.get_config("CAMERA.models", "llava:7b")
         )
-        self.model = model_val if model_val else "glm-4v-plus"
+        self.model = model_val if model_val else "llava:7b"
         
         logger.info(
             f"VL Camera initialized with model: {self.model}, URL: "
@@ -164,69 +158,16 @@ class VLCamera(BaseCamera):
                 full_prompt = f"{full_prompt}\n\nContexto: {context}"
                 logger.info(f"Sending image with context: {context[:50]}")
 
-            # Tentar Ollama local se base_url aponta para localhost:11434
-            # ou se o modelo for da família llava
-            base_url_str = str(getattr(self, "base_url", ""))
-            if (
-                "localhost:11434" in base_url_str
-                or "127.0.0.1:11434" in base_url_str
-            ):
-                logger.info("Tentando Ollama local...")
-                try:
-                    return self._analyze_with_ollama(img_b64, full_prompt)
-                except Exception as ollama_error:
-                    logger.warning(
-                        f"Ollama falhou: {str(ollama_error)}, "
-                        "tentando Cliente AI Xiaozhi..."
-                    )
-            # Se for Gemini, usar direto
-            elif "gemini" in self.model.lower():
-                logger.info("Usando Gemini Vision API...")
-                return self._analyze_with_gemini(img_b64, full_prompt)
-            elif "deepseek" in self.model.lower():
-                # DeepSeek não suporta visão, pular para Xiaozhi
-                logger.info(
-                    "DeepSeek detectado (sem visão), "
-                    "tentando Cliente AI Xiaozhi..."
-                )
-            else:
-                # Tentar com Zhipu/OpenAI
-                logger.info("Tentando análise com API OpenAI-compatible...")
-                try:
-                    return self._analyze_with_openai(img_b64, full_prompt)
-                except Exception as api_error:
-                    logger.warning(
-                        f"API falhou: {str(api_error)}, "
-                        "tentando Cliente AI Xiaozhi..."
-                    )
-
-            # Fallback para Cliente AI Xiaozhi (Zhipu)
-            logger.info("Usando fallback: Cliente AI Xiaozhi...")
-            return self._analyze_with_openai(img_b64, full_prompt)
+            # Usar apenas Ollama local (LLaVA)
+            logger.info("Analisando imagem com Ollama/LLaVA (100% gratuito)...")
+            return self._analyze_with_ollama(img_b64, full_prompt)
 
         except Exception as e:
-            error_msg = f"Failed to analyze image: {str(e)}"
+            error_msg = f"Ollama falhou ao analisar imagem: {str(e)}"
             logger.error(error_msg)
             
-            # Se falhar tudo, tentar Ollama como último recurso
-            if "404" in str(e) or "not found" in str(e).lower():
-                logger.warning(
-                    "API retornou 404 - tentando fallback para Ollama local..."
-                )
-                try:
-                    # Forçar uso do Ollama local
-                    original_base_url = self.base_url
-                    self.base_url = "http://localhost:11434"
-                    result = self._analyze_with_ollama(img_b64, full_prompt)
-                    self.base_url = original_base_url
-                    return result
-                except Exception as ollama_err:
-                    logger.error(
-                        f"Fallback para Ollama também falhou: {ollama_err}"
-                    )
-            
             msg = f'{{"success": false, "message": "{error_msg}", '\
-                  f'"suggestion": "Instale Ollama local: https://ollama.com/"}}'
+                  f'"suggestion": "Verifique se Ollama está rodando: ollama serve"}}'
             return msg
 
     def _analyze_with_openai(self, image_b64: str,

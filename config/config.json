@@ -34,9 +34,9 @@
     "frame_width": 640,
     "frame_height": 480,
     "fps": 30,
-    "Local_VL_url": "http://api.xiaozhi.me/vision/explain",
-    "VLapi_key": "d66ea037-1b07-4283-b49b-b629e005c074",
-    "models": "glm-4v-plus"
+    "Local_VL_url": "http://localhost:11434",
+    "VLapi_key": "ollama",
+    "models": "llava:7b"
   },
   "SHORTCUTS": {
     "ENABLED": true,
