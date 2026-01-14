@@ -43,6 +43,8 @@ def take_photo(arguments: dict) -> str:
     """
     de.
     """
+    import json
+    
     camera = get_camera_instance()
     logger.info(f"Using camera implementation: {camera.__class__.__name__}")
 
@@ -58,4 +60,21 @@ def take_photo(arguments: dict) -> str:
 
     # 
     logger.info("Photo captured, starting analysis...")
-    return camera.analyze(question, context)
+    result = camera.analyze(question, context)
+    
+    # Parsear o JSON retornado e extrair o texto da descrição
+    try:
+        result_dict = json.loads(result)
+        if result_dict.get("success") and "text" in result_dict:
+            description = result_dict["text"]
+            logger.info(f"✅ Descrição extraída: {description[:100]}...")
+            # Retornar apenas o texto da descrição para o LLM processar
+            return description
+        else:
+            error_msg = result_dict.get("message", "Erro desconhecido")
+            logger.error(f"❌ Análise falhou: {error_msg}")
+            return f"Erro ao analisar imagem: {error_msg}"
+    except json.JSONDecodeError as e:
+        logger.error(f"❌ Erro ao parsear resposta: {e}")
+        # Se não for JSON válido, retornar como está
+        return result
