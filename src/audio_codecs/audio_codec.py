@@ -661,10 +661,13 @@ class AudioCodec:
             Opus → 24kHz  CanaisPCM → ReproduçãoFila → SaídaProcessando
         """
         try:
+            logger.debug(f"write_audio recebido: {len(opus_data)} bytes Opus")
+            
             # Opuspara24kHz PCMDados
             pcm_data = self.opus_decoder.decode(
                 opus_data, AudioConfig.OUTPUT_FRAME_SIZE
             )
+            logger.debug(f"Opus decodificado: {len(pcm_data)} bytes PCM")
 
             audio_array = np.frombuffer(pcm_data, dtype=np.int16)
 
@@ -680,11 +683,13 @@ class AudioCodec:
                 self._output_buffer, audio_array, replace_oldest=True
             ):
                 logger.warning("ReproduçãoFilaJá，ÁudioQuadros")
+            else:
+                logger.debug(f"Áudio adicionado à fila: {len(audio_array)} samples")
 
         except opuslib.OpusError as e:
             logger.warning(f"OpusFalha，Quadros: {e}")
         except Exception as e:
-            logger.warning(f"ÁudioFalha，Quadros: {e}")
+            logger.warning(f"ÁudioFalha，Quadros: {e}", exc_info=True)
 
     async def write_pcm_direct(self, pcm_data: np.ndarray):
         """ PCM dadosparaReproduçãoFila（ MusicPlayer Usando）

@@ -312,9 +312,13 @@ class Application:
         #     self._shutdown_event.set()
 
     def _on_incoming_audio(self, data: bytes):
-        logger.debug(f"Mensagem binária recebida, comprimento: {len(data)}")
+        data_len = len(data) if data else 0
+        logger.info(f"_on_incoming_audio: {data_len} bytes")
         # para
-        self.spawn(self.plugins.notify_incoming_audio(data), "plugin:on_audio")
+        coro = self.plugins.notify_incoming_audio(data)
+        logger.debug("notify_incoming_audio corotina criada")
+        self.spawn(coro, "plugin:on_audio")
+        logger.debug("corotina spawned para plugin audio")
 
     def _on_incoming_json(self, json_data):
         try:

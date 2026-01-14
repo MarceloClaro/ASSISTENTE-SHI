@@ -97,11 +97,16 @@ class AudioPlugin(Plugin):
         Args:
             data: RetornodeOpusCodificaçãoáudiodados
         """
+        data_len = len(data) if data else 0
+        logger.debug(f"on_incoming_audio: {data_len} bytes")
         if self.codec:
             try:
                 await self.codec.write_audio(data)
+                logger.debug(f"write_audio Ok")
             except Exception as e:
-                logger.debug(f"ÁudioDadosFalha: {e}")
+                logger.warning(
+                    f"ÁudioDadosFalha: {e}", exc_info=True
+                )
 
     async def _pause_music_for_tts(self):
         """
