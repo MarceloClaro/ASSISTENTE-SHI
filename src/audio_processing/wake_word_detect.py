@@ -119,7 +119,15 @@ class WakeWordDetector:
             ]
             for file_path in required_files:
                 if not file_path.exists():
-                    raise FileNotFoundError(f"Modelo ausente: {file_path}")
+                    logger.error(
+                        f"Modelo Wake Word ausente: {file_path}\n"
+                        f"SOLUÇÃO: Execute 'python download_wake_word_model.py' "
+                        f"para baixar automaticamente"
+                    )
+                    raise FileNotFoundError(
+                        f"Modelo ausente: {file_path}. "
+                        f"Execute: python download_wake_word_model.py"
+                    )
 
             logger.info(f"Sherpa-ONNX KeywordSpotterModelo: {self.model_dir}")
             logger.info(

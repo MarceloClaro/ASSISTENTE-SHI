@@ -207,7 +207,26 @@ class VLCamera(BaseCamera):
         except Exception as e:
             error_msg = f"Failed to analyze image: {str(e)}"
             logger.error(error_msg)
-            msg = f'{{"success": false, "message": "{error_msg}"}}'
+            
+            # Se falhar tudo, tentar Ollama como último recurso
+            if "404" in str(e) or "not found" in str(e).lower():
+                logger.warning(
+                    "API retornou 404 - tentando fallback para Ollama local..."
+                )
+                try:
+                    # Forçar uso do Ollama local
+                    original_base_url = self.base_url
+                    self.base_url = "http://localhost:11434"
+                    result = self._analyze_with_ollama(img_b64, full_prompt)
+                    self.base_url = original_base_url
+                    return result
+                except Exception as ollama_err:
+                    logger.error(
+                        f"Fallback para Ollama também falhou: {ollama_err}"
+                    )
+            
+            msg = f'{{"success": false, "message": "{error_msg}", '\
+                  f'"suggestion": "Instale Ollama local: https://ollama.com/"}}'
             return msg
 
     def _analyze_with_openai(self, image_b64: str,
