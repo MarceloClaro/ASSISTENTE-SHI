@@ -85,8 +85,10 @@ class AudioPlugin(Plugin):
                     # TTS Final: Limpa fila SOMENTE após reprodução completa
                     # Restaurando Reprodução de Música
                     await self._resume_music_after_tts()
-                    # Limpa apenas após TTS terminar completamente
-                    await asyncio.sleep(0.1)  # Aguarda última reprodução
+                    # 🔧 CRÍTICO: Aguardar buffer de áudio drenar
+                    # completamente + margem de segurança
+                    # (~1200-1400 frames precisam de ~3-4s para reprodução)
+                    await asyncio.sleep(3.5)
                     await self.codec.clear_audio_queue()
         except Exception as e:
             logger.error(f"Falha ao processar evento TTS: {e}", exc_info=True)

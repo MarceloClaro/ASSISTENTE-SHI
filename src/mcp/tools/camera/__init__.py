@@ -8,6 +8,13 @@ from src.utils.logging_config import get_logger
 from .normal_camera import NormalCamera
 from .vl_camera import VLCamera
 
+# 🚀 OTIMIZAÇÃO: SmolVLM2 + OpenVINO (6-9x mais rápido)
+try:
+    from .smolvlm2_optimized import SmolVLM2Optimized
+    SMOLVLM2_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    SMOLVLM2_AVAILABLE = False
+
 logger = get_logger(__name__)
 
 
@@ -29,10 +36,16 @@ def get_camera_instance():
             camera.set_explain_token(vl_key)
         return camera
 
-    logger.info("VL configuration not found, using normal Camera implementation")
+    logger.info(
+        "VL configuration not found, "
+        "using normal Camera implementation"
+    )
     camera = NormalCamera.get_instance()
     # Configurar URL padrão para câmera normal
-    default_url = config.get_config("CAMERA_OPTIONS.LOCAL_VL_URL", "https://api.tenclass.net/xiaozhi/vision/explain")
+    default_url = config.get_config(
+        "CAMERA_OPTIONS.LOCAL_VL_URL",
+        "https://api.tenclass.net/xiaozhi/vision/explain"
+    )
     if default_url:
         camera.set_explain_url(default_url)
         logger.info(f"Normal camera configured with URL: {default_url}")

@@ -44,7 +44,7 @@ def test_camera_complete():
         
         if not success:
             print("❌ Erro ao capturar foto")
-            return False
+            assert False
         
         print("✅ Foto capturada\n")
         
@@ -57,7 +57,7 @@ def test_camera_complete():
         
         if not description:
             print("❌ Nenhuma descrição gerada")
-            return False
+            assert False
         
         print("✅ Análise concluída!\n")
         
@@ -89,16 +89,15 @@ def test_camera_complete():
         if all_ok:
             print("🎉 TESTE COMPLETO: SUCESSO!")
             print(f"   Tamanho da descrição: {len(description)} caracteres")
-            return True
         else:
             print("⚠️  TESTE COMPLETO: FALHOU (algumas validações)")
-            return False
+            assert False
         
     except Exception as e:
         print(f"\n❌ ERRO NO TESTE: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise
 
 
 def test_camera_no_ollama():
@@ -118,14 +117,13 @@ def test_camera_no_ollama():
         
         if success:
             print("✅ Foto capturada (modo fallback)")
-            return True
         else:
             print("⚠️  Erro esperado")
-            return False
+            assert False
         
     except Exception as e:
         print(f"⚠️  Exceção esperada: {e}")
-        return False
+        raise
 
 
 def main():

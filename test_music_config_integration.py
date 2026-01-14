@@ -53,13 +53,12 @@ def test_gui_display_model_config():
             print("⚠ Arquivo de config não encontrado")
         
         print("✓ TESTE 1 PASSOU\n")
-        return True
         
     except Exception as e:
         print(f"✗ TESTE 1 FALHOU: {e}\n")
         import traceback
         traceback.print_exc()
-        return False
+        raise
 
 
 def test_music_player_custom_path():
@@ -100,13 +99,12 @@ def test_music_player_custom_path():
         print(f"✓ Caminho permanece válido após rejeição: {current_path}")
         
         print("✓ TESTE 2 PASSOU\n")
-        return True
         
     except Exception as e:
         print(f"✗ TESTE 2 FALHOU: {e}\n")
         import traceback
         traceback.print_exc()
-        return False
+        raise
 
 
 def test_music_scan_with_custom_path():
@@ -146,13 +144,12 @@ def test_music_scan_with_custom_path():
         print("✓ Limpeza concluída")
         
         print("✓ TESTE 3 PASSOU\n")
-        return True
         
     except Exception as e:
         print(f"✗ TESTE 3 FALHOU: {e}\n")
         import traceback
         traceback.print_exc()
-        return False
+        raise
 
 
 def test_full_workflow():
@@ -205,13 +202,12 @@ def test_full_workflow():
         print("✓ Limpeza concluída")
         
         print("✓ TESTE 4 PASSOU\n")
-        return True
         
     except Exception as e:
         print(f"✗ TESTE 4 FALHOU: {e}\n")
         import traceback
         traceback.print_exc()
-        return False
+        raise
 
 
 def main():

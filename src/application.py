@@ -347,14 +347,23 @@ class Application:
                         # Continuar：Modo
                         async def _restart_listening():
                             try:
-                                # ConfigurandoEstadopara LISTENING，ÁudioFilaLimpandoePararAguardando
-                                await self.set_device_state(DeviceState.LISTENING)
+                                # 🔧 CRÍTICO: Aguardar reprodução completa
+                                # do TTS antes de mudar estado
+                                # Sincronizado com audio.py (3.5s) + margem
+                                await asyncio.sleep(4.0)
 
-                                # AguardandoÁudioParar，Enviando
-                                # REALTIME JáEm LISTENING Enviando
+                                # Configurando Estado LISTENING
+                                await self.set_device_state(
+                                    DeviceState.LISTENING
+                                )
+
+                                # Aguardando Áudio Parar, Enviando
+                                # REALTIME Já Em LISTENING Enviando
                                 if not (
-                                    self.listening_mode == ListeningMode.REALTIME
-                                    and self.device_state == DeviceState.LISTENING
+                                    self.listening_mode
+                                    == ListeningMode.REALTIME
+                                    and self.device_state
+                                    == DeviceState.LISTENING
                                 ):
                                     await self.protocol.send_start_listening(
                                         self.listening_mode
@@ -362,7 +371,9 @@ class Application:
                             except Exception:
                                 pass
 
-                        self.spawn(_restart_listening(), "state:tts_stop_restart")
+                        self.spawn(
+                            _restart_listening(), "state:tts_stop_restart"
+                        )
                     else:
                         self.spawn(
                             self.set_device_state(DeviceState.IDLE),

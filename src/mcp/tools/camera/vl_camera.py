@@ -326,20 +326,21 @@ class VLCamera(BaseCamera):
                 "images": [image_b64],
                 "stream": False,
                 "options": {
-                    # Tokens MUITO reduzidos para respostas extremamente curtas
-                    # 30 tokens ≈ 90 caracteres máximo (5-8 palavras)
-                    "num_predict": 30,  # Reduzido de 70 para 30
-                    "temperature": 0.1,  # Muito baixo = mais determinístico
-                    "top_p": 0.5  # Limitar diversidade
+                    # Tokens DRASTICAMENTE reduzidos (hardware lento)
+                    # 15 tokens ≈ 3-5 palavras APENAS
+                    "num_predict": 15,  # Reduzido de 30 para 15
+                    "temperature": 0.05,  # Extremamente determinístico
+                    "top_p": 0.3  # Muito focado
                 }
             }
             
-            # Fazer requisição com timeout de 55s (Xiaozhi tem limite de 60s)
-            # Margem de 5s para retorno e processamento
+            # Timeout aumentado para 90s (hardware muito lento)
+            # AVISO: Pode causar timeout no servidor Xiaozhi (~60s)
+            # mas evita timeout local
             response = httpx.post(
                 url,
                 json=payload,
-                timeout=55.0  # 55 segundos máximo
+                timeout=90.0,  # 90 segundos (hardware lento)
             )
             
             if response.status_code == 200:
@@ -370,8 +371,8 @@ class VLCamera(BaseCamera):
         
         except httpx.TimeoutException:
             error_msg = (
-                "⏱️ Análise demorou mais de 55 segundos. "
-                "Otimize Ollama: ollama run minicpm-v --gpu-layers 999"
+                "⏱️ Análise demorou mais de 90 segundos. "
+                "Hardware muito lento! Considere usar API online."
             )
             logger.error(error_msg)
             msg = f'{{"success": false, "message": "{error_msg}"}}'

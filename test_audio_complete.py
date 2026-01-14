@@ -3,7 +3,33 @@ Teste completo e automatizado de áudio: TTS e música.
 """
 import sys
 import subprocess
+import importlib
+import shutil
 from pathlib import Path
+
+import pytest
+
+# Comando para validar e ajustar volume (quebrado em partes para lint)
+VOLUME_CMD = (
+    "python -c \"from pycaw.pycaw import AudioUtilities, "
+    "IAudioEndpointVolume; from comtypes import CLSCTX_ALL; "
+    "devices = AudioUtilities.GetSpeakers(); "
+    "interface = devices.Activate(IAudioEndpointVolume._iid_, "
+    "CLSCTX_ALL, None); "
+    "volume = interface.QueryInterface(IAudioEndpointVolume); "
+    "v = volume.GetMasterVolumeLevelScalar(); "
+    "print(f'Volume: {int(v*100)}%'); "
+    "volume.SetMasterVolumeLevelScalar(0.6, None) if v < 0.3 else None; "
+    "print('Volume ajustado para 60%') if v < 0.3 else print('Volume OK')\""
+)
+
+
+def require_module(module_name: str, reason: str):
+    """Skipa teste se módulo não estiver disponível ou falhar ao importar."""
+    try:
+        importlib.import_module(module_name)
+    except Exception as exc:  # noqa: BLE001
+        pytest.skip(f"{reason}: {exc}")
 
 
 def run_command(cmd, description):
@@ -20,7 +46,7 @@ def run_command(cmd, description):
             timeout=30
         )
         if result.returncode == 0:
-            print(f"✅ Sucesso")
+            print("✅ Sucesso")
             if result.stdout.strip():
                 print(result.stdout)
             return True, result.stdout
@@ -39,20 +65,43 @@ def run_command(cmd, description):
 
 def test_volume():
     """Testa volume do sistema."""
-    cmd = """python -c "from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume; from comtypes import CLSCTX_ALL; devices = AudioUtilities.GetSpeakers(); interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None); volume = interface.QueryInterface(IAudioEndpointVolume); v = volume.GetMasterVolumeLevelScalar(); print(f'Volume: {int(v*100)}%'); volume.SetMasterVolumeLevelScalar(0.6, None) if v < 0.3 else None; print('Volume ajustado para 60%') if v < 0.3 else print('Volume OK')" """
-    return run_command(cmd, "Verificando e ajustando volume do sistema")
+    require_module(
+        "pycaw.pycaw",
+        "pycaw/comtypes indisponível no ambiente do teste (somente Windows)"
+    )
+    success, _ = run_command(
+        VOLUME_CMD,
+        "Verificando e ajustando volume do sistema",
+    )
+    assert success
 
 
 def test_pyttsx3():
     """Testa TTS com pyttsx3."""
-    cmd = """python -c "import pyttsx3; engine = pyttsx3.init(); engine.setProperty('rate', 150); engine.setProperty('volume', 1.0); print('Falando: Teste de áudio'); engine.say('Teste de áudio bem sucedido'); engine.runAndWait(); print('TTS concluído')" """
-    return run_command(cmd, "Testando TTS local (pyttsx3)")
+    require_module(
+        "pyttsx3",
+        "pyttsx3/comtypes indisponível no ambiente do teste (somente Windows)"
+    )
+    require_module(
+        "comtypes",
+        "comtypes indisponível no ambiente do teste (somente Windows)"
+    )
+    cmd = (
+        "python -c \"import pyttsx3; engine = pyttsx3.init(); "
+        "engine.setProperty('rate', 150); engine.setProperty('volume', 1.0); "
+        "print('Falando: Teste de áudio'); "
+        "engine.say('Teste de áudio bem sucedido'); engine.runAndWait(); "
+        "print('TTS concluído')\""
+    )
+    success, _ = run_command(cmd, "Testando TTS local (pyttsx3)")
+    assert success
 
 
 def test_ollama():
     """Testa se Ollama está rodando."""
     cmd = 'curl -s http://localhost:11434/api/tags'
-    return run_command(cmd, "Verificando Ollama")
+    success, _ = run_command(cmd, "Verificando Ollama")
+    assert success
 
 
 def check_cache_dirs():
@@ -88,14 +137,22 @@ def check_cache_dirs():
 
 def test_camera_import():
     """Testa imports da câmera."""
-    cmd = """python -c "from src.mcp.tools.camera.vl_camera import VLCamera; print('VLCamera importado com sucesso')" """
-    return run_command(cmd, "Testando imports da câmera")
+    cmd = (
+        "python -c \"from src.mcp.tools.camera.vl_camera import VLCamera; "
+        "print('VLCamera importado com sucesso')\""
+    )
+    success, _ = run_command(cmd, "Testando imports da câmera")
+    assert success
 
 
 def test_music_player_import():
     """Testa imports do player de música."""
-    cmd = """python -c "from src.mcp.tools.music.music_player import MusicPlayer; print('MusicPlayer importado com sucesso')" """
-    return run_command(cmd, "Testando imports do player de música")
+    cmd = (
+        "python -c \"from src.mcp.tools.music.music_player import "
+        "MusicPlayer; print('MusicPlayer importado com sucesso')\""
+    )
+    success, _ = run_command(cmd, "Testando imports do player de música")
+    assert success
 
 
 def create_sample_mp3():
@@ -104,7 +161,9 @@ def create_sample_mp3():
     print("🔍 Verificando arquivo MP3 de teste")
     print(f"{'='*60}")
     
-    music_dir = Path("C:/Users/marce/AppData/Local/py-xiaozhi-main/cache/music/local")
+    music_dir = Path(
+        "C:/Users/marce/AppData/Local/py-xiaozhi-main/cache/music/local"
+    )
     test_file = music_dir / "teste_audio.mp3"
     
     if test_file.exists():
@@ -112,7 +171,10 @@ def create_sample_mp3():
         return True, str(test_file)
     
     # Tentar criar com ffmpeg
-    cmd = f'ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t 5 -q:a 9 -acodec libmp3lame "{test_file}" -y'
+    cmd = (
+        "ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t 5 -q:a 9 "
+        f"-acodec libmp3lame \"{test_file}\" -y"
+    )
     success, _ = run_command(cmd, "Criando MP3 de teste (5s silêncio)")
     
     if success and test_file.exists():
@@ -126,8 +188,11 @@ def create_sample_mp3():
 
 def test_ffmpeg():
     """Verifica se FFmpeg está disponível."""
+    if shutil.which("ffmpeg") is None:
+        pytest.skip("FFmpeg não encontrado no PATH do ambiente de teste")
     cmd = "ffmpeg -version"
-    return run_command(cmd, "Verificando FFmpeg")
+    success, _ = run_command(cmd, "Verificando FFmpeg")
+    assert success
 
 
 def main():
@@ -139,19 +204,38 @@ def main():
     results = {}
     
     # 1. Volume
-    success, _ = test_volume()
+    success, _ = run_command(
+        VOLUME_CMD,
+        "Verificando e ajustando volume do sistema",
+    )
     results['volume'] = success
     
     # 2. TTS local
-    success, _ = test_pyttsx3()
+    success, _ = run_command(
+        (
+            "python -c \"import pyttsx3; engine = pyttsx3.init(); "
+            "engine.setProperty('rate', 150); "
+            "engine.setProperty('volume', 1.0); "
+            "print('Falando: Teste de áudio'); "
+            "engine.say('Teste de áudio bem sucedido'); "
+            "engine.runAndWait(); print('TTS concluído')\""
+        ),
+        "Testando TTS local (pyttsx3)",
+    )
     results['tts'] = success
     
     # 3. Ollama
-    success, _ = test_ollama()
+    success, _ = run_command(
+        'curl -s http://localhost:11434/api/tags',
+        "Verificando Ollama",
+    )
     results['ollama'] = success
     
     # 4. FFmpeg
-    success, _ = test_ffmpeg()
+    success, _ = run_command(
+        "ffmpeg -version",
+        "Verificando FFmpeg",
+    )
     results['ffmpeg'] = success
     
     # 5. Diretórios
@@ -166,10 +250,22 @@ def main():
         results['sample_mp3'] = True
     
     # 7. Imports
-    success, _ = test_camera_import()
+    success, _ = run_command(
+        (
+            "python -c \"from src.mcp.tools.camera.vl_camera import VLCamera; "
+            "print('VLCamera importado com sucesso')\""
+        ),
+        "Testando imports da câmera",
+    )
     results['camera_import'] = success
     
-    success, _ = test_music_player_import()
+    success, _ = run_command(
+        (
+            "python -c \"from src.mcp.tools.music.music_player import "
+            "MusicPlayer; print('MusicPlayer importado com sucesso')\""
+        ),
+        "Testando imports do player de música",
+    )
     results['music_import'] = success
     
     # Resumo

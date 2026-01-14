@@ -263,6 +263,11 @@ format_code.bat   # Windows
 # Executar testes
 python -m pytest tests/
 
+# Para habilitar os testes de áudio (Windows)
+# 1) Instale o FFmpeg e adicione o binário ao PATH
+# 2) pip install pycaw comtypes pyttsx3
+# 3) Reabra o terminal após atualizar o PATH
+
 # Verificar estilo de código
 python -m flake8 src/
 ```
