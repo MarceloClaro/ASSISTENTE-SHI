@@ -579,7 +579,7 @@ class McpServer:
 
     async def _parse_capabilities(self, capabilities):
         """
-        Analisandocapabilities.
+        Analisandocapabilities com validação e fallback.
         """
         vision = capabilities.get("vision", {})
         if vision and isinstance(vision, dict):
@@ -589,11 +589,85 @@ class McpServer:
                 from src.mcp.tools.camera import get_camera_instance
 
                 camera = get_camera_instance()
-                if hasattr(camera, "set_explain_url"):
-                    camera.set_explain_url(url)
-                if token and hasattr(camera, "set_explain_token"):
-                    camera.set_explain_token(token)
-                logger.info(f"Vision service configured with URL: {url}")
+
+                # Validar se URL está acessível
+                vision_url_ok = await self._validate_vision_url(
+                    url, token
+                )
+
+                if vision_url_ok:
+                    # URL validada, usar conforme configurado
+                    if hasattr(camera, "set_explain_url"):
+                        camera.set_explain_url(url)
+                    if (
+                        token
+                        and hasattr(camera, "set_explain_token")
+                    ):
+                        camera.set_explain_token(token)
+                    logger.info(
+                        f"✅ Vision service configured "
+                        f"with URL: {url}"
+                    )
+                else:
+                    # URL inacessível, usar Ollama local como
+                    # fallback
+                    logger.warning(
+                        f"⚠️  Vision URL inaccessível: {url}"
+                    )
+                    logger.info(
+                        "📌 Usando Ollama local como "
+                        "fallback para visão"
+                    )
+
+                    # Configurar para usar Ollama local
+                    ollama_url = "http://localhost:11434"
+                    if hasattr(camera, "set_explain_url"):
+                        camera.set_explain_url(ollama_url)
+                    logger.info(
+                        f"✅ Vision service fallback: "
+                        f"{ollama_url}"
+                    )
+
+    async def _validate_vision_url(
+        self, url: str, token: Optional[str] = None
+    ) -> bool:
+        """
+        Validar se URL de visão está acessível.
+        """
+        try:
+            import httpx
+
+            headers = {}
+            if token:
+                # Tentar diferentes formatos de autenticação
+                headers["Authorization"] = f"Bearer {token}"
+
+            # Head request para validar acesso
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.head(
+                    url, headers=headers, follow_redirects=True
+                )
+
+                if response.status_code in [200, 401, 403]:
+                    # URL existe (mesmo com auth error)
+                    logger.debug(
+                        f"Vision URL reachable "
+                        f"(status: {response.status_code})"
+                    )
+                    return True
+                else:
+                    logger.warning(
+                        f"Vision URL returned "
+                        f"{response.status_code}"
+                    )
+                    return False
+
+        except Exception as e:
+            logger.warning(
+                f"❌ Vision URL validation failed: "
+                f"{type(e).__name__}: {str(e)}"
+            )
+            return False
 
     async def _reply_result(self, id: int, result: Any):
         """
@@ -602,7 +676,10 @@ class McpServer:
         payload = {"jsonrpc": "2.0", "id": id, "result": result}
 
         result_len = len(json.dumps(result))
-        logger.info(f"[MCP] EnviandoSucesso: ID={id}, Comprimento={result_len}")
+        logger.info(
+            f"[MCP] EnviandoSucesso: ID={id}, "
+            f"Comprimento={result_len}"
+        )
 
         if self._send_callback:
             await self._send_callback(json.dumps(payload))
