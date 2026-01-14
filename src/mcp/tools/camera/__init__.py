@@ -115,6 +115,13 @@ def take_photo(arguments: dict) -> str:
                 f"({len(enhanced_context)} chars)"
             )
             
+            # 🔧 CRITICAL: Aguardar LLM processar a resposta
+            # completa antes de retornar. Sem isso, TTS
+            # começa com resposta vazia/padrão.
+            # LLM normalmente leva 1-2s para processar.
+            import time
+            time.sleep(2.0)  # 2 segundos para LLM processar
+            
             # Retornar com contexto injetado
             return json.dumps({
                 "content": [{
