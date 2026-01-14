@@ -323,19 +323,20 @@ class VLCamera(BaseCamera):
                 "images": [image_b64],
                 "stream": False,
                 "options": {
-                    # Tokens reduzidos para respostas EXTREMAMENTE concisas
-                    # 70 tokens ≈ 210 caracteres máximo
-                    "num_predict": 70,
-                    "temperature": 0.3  # Muito baixo para resposta curta
+                    # Tokens MUITO reduzidos para respostas extremamente curtas
+                    # 30 tokens ≈ 90 caracteres máximo (5-8 palavras)
+                    "num_predict": 30,  # Reduzido de 70 para 30
+                    "temperature": 0.1,  # Muito baixo = mais determinístico
+                    "top_p": 0.5  # Limitar diversidade
                 }
             }
             
-            # Fazer requisição com timeout de 50s (Xiaozhi tem limite de 60s)
-            # Se Ollama demorar >50s, melhor retornar erro amigável
+            # Fazer requisição com timeout de 55s (Xiaozhi tem limite de 60s)
+            # Margem de 5s para retorno e processamento
             response = httpx.post(
                 url,
                 json=payload,
-                timeout=50.0  # 50 segundos máximo
+                timeout=55.0  # 55 segundos máximo
             )
             
             if response.status_code == 200:
@@ -366,8 +367,8 @@ class VLCamera(BaseCamera):
         
         except httpx.TimeoutException:
             error_msg = (
-                "Análise demorou mais de 50 segundos. "
-                "Ollama pode estar sobrecarregado ou modelo muito grande."
+                "⏱️ Análise demorou mais de 55 segundos. "
+                "Otimize Ollama: ollama run minicpm-v --gpu-layers 999"
             )
             logger.error(error_msg)
             msg = f'{{"success": false, "message": "{error_msg}"}}'
