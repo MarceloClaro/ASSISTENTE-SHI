@@ -22,6 +22,12 @@ Este é um fork personalizado do [py-xiaozhi](https://github.com/huangjunsen0406
 
 ## ✨ Características Principais
 
+### 🖼️ Interface do Sistema
+
+![Interface GUI do ASSISTENTE-SHI](https://github.com/huangjunsen0406/py-xiaozhi/blob/main/documents/docs/guide/images/%E7%B3%BB%E7%BB%9F%E7%95%8C%E9%9D%A2.png?raw=true)
+
+*A interface moderna PyQt5 com suporte a múltiplas expressões e interação fluida com IA.*
+
 ### 🎯 Funcionalidades de IA
 
 - **Interação por Voz com IA**: Suporte completo a entrada de voz, reconhecimento de fala e resposta inteligente
